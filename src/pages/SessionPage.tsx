@@ -85,17 +85,9 @@ export function SessionPage() {
       return;
     }
 
-    const isDone = submitRound(roundInputs);
+    submitRound(roundInputs);
     setRoundInputs({});
     setActivePlayer(0);
-
-    if (isDone) {
-      const totals = withWinners(computePlayerTotals(
-        { ...session, scores: [...session.scores] },
-        module,
-      ));
-      endSession(totals.filter(t => t.is_winner).map(t => t.player_id));
-    }
   };
 
   const isLastPlayer = activePlayer === session.player_ids.length - 1;
@@ -112,10 +104,7 @@ export function SessionPage() {
           )}
         </div>
         {module.metadata.scoring_mode === 'end_of_game' && (
-          <Button variant="ghost" size="sm" onClick={() => {
-            const totals = withWinners(computePlayerTotals(session, module));
-            endSession(totals.filter(t => t.is_winner).map(t => t.player_id));
-          }}>
+          <Button variant="ghost" size="sm" onClick={endSession}>
             Terminar
           </Button>
         )}
