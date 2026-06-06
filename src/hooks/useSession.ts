@@ -1,8 +1,14 @@
 import { useState, useCallback } from 'react';
 import { sessionsStorage } from '../lib/storage';
-import type { Session, InputValues, RoundScore } from '../lib/types';
+import type { Session, InputValues, RoundScore, InputDef } from '../lib/types';
 import { computeScore } from '../lib/sessionEngine';
 import { getGameModule } from '../lib/gameLoader';
+
+function getInputDefaults(inputs: InputDef[]): InputValues {
+  return Object.fromEntries(
+    inputs.map(inp => [inp.id, inp.default ?? (inp.type === 'toggle' ? false : 0)])
+  );
+}
 
 function uuid() {
   return crypto.randomUUID();
@@ -52,12 +58,17 @@ export function useSession(sessionId: string | null) {
       total_rounds: module.metadata.total_rounds,
     };
 
-    const newScores: RoundScore[] = session.player_ids.map(player_id => ({
-      player_id,
-      round: session.current_round,
-      raw_inputs: roundInputs[player_id] ?? {},
-      computed_score: computeScore(module, roundInputs[player_id] ?? {}, ctx),
-    }));
+    // Merge player inputs with defaults so score() always receives numbers, never undefined
+    const defaults = getInputDefaults(module.inputs);
+    const newScores: RoundScore[] = session.player_ids.map(player_id => {
+      const values = { ...defaults, ...roundInputs[player_id] };
+      return {
+        player_id,
+        round: session.current_round,
+        raw_inputs: values,
+        computed_score: computeScore(module, values, ctx),
+      };
+    });
 
     const allScores = [...session.scores, ...newScores];
     const nextRound = session.current_round + 1;
@@ -65,23 +76,47 @@ export function useSession(sessionId: string | null) {
       module.metadata.scoring_mode === 'end_of_game' ||
       (module.metadata.total_rounds != null && nextRound > module.metadata.total_rounds);
 
+    // Compute winners from allScores now (fresh data) instead of stale session state
+    let winner_ids: string[] | undefined;
+    if (isDone) {
+      const totals = session.player_ids.map(pid => ({
+        player_id: pid,
+        grand_total: allScores.filter(s => s.player_id === pid).reduce((sum, s) => sum + s.computed_score, 0),
+      }));
+      const max = Math.max(...totals.map(t => t.grand_total));
+      winner_ids = totals.filter(t => t.grand_total === max).map(t => t.player_id);
+    }
+
     sessionsStorage.update(session.id, {
       scores: allScores,
       current_round: isDone ? session.current_round : nextRound,
       status: isDone ? 'completed' : 'active',
       completed_at: isDone ? new Date().toISOString() : undefined,
+      winner_ids,
     });
     refresh();
     return isDone;
   }, [session, refresh]);
 
-  const endSession = useCallback((winner_ids: string[]) => {
+  // Used by the manual "Terminar" button in end_of_game mode.
+  // Reads scores directly from storage to avoid stale state.
+  const endSession = useCallback(() => {
     if (!session) return;
+    const fresh = sessionsStorage.getById(session.id);
+    if (!fresh) return;
+    const module = getGameModule(fresh.game_id);
+    const totals = fresh.player_ids.map(pid => ({
+      player_id: pid,
+      grand_total: fresh.scores.filter(s => s.player_id === pid).reduce((sum, s) => sum + s.computed_score, 0),
+    }));
+    const max = totals.length > 0 ? Math.max(...totals.map(t => t.grand_total)) : 0;
+    const winner_ids = totals.filter(t => t.grand_total === max).map(t => t.player_id);
     sessionsStorage.update(session.id, {
       status: 'completed',
       completed_at: new Date().toISOString(),
       winner_ids,
     });
+    void module; // module loaded for future use (e.g. tiebreaker)
     refresh();
   }, [session, refresh]);
 
