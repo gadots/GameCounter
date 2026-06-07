@@ -9,7 +9,7 @@ Desarrollar siempre en `claude/board-game-scorer-design-ScVoF`. Nunca pushear di
 ## Git workflow (automático)
 Después de cada push de cambios:
 1. Crear un PR hacia `main` usando `mcp__github__create_pull_request`
-2. Mergear el PR inmediatamente usando `mcp__github__merge_pull_request` (merge commit)
+2. Mergear el PR con **squash** usando `mcp__github__merge_pull_request` con `merge_method: "squash"` — esto genera un único commit en main con autoría correcta, sin merge commits de GitHub
 3. Hacer `git pull origin main` para sincronizar la rama local con main
 
 ## Convenciones de commits
