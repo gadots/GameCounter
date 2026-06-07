@@ -7,10 +7,13 @@ App web para contar puntos de juegos de mesa. Stack: React + Vite + TypeScript +
 Desarrollar siempre en `claude/board-game-scorer-design-ScVoF`. Nunca pushear directo a `main`.
 
 ## Git workflow (automático)
-Después de cada push de cambios:
-1. Crear un PR hacia `main` usando `mcp__github__create_pull_request`
-2. Mergear el PR con **squash** usando `mcp__github__merge_pull_request` con `merge_method: "squash"` — esto genera un único commit en main con autoría correcta, sin merge commits de GitHub
-3. Hacer `git pull origin main` para sincronizar la rama local con main
+Después de commitear cambios en el feature branch:
+1. Push al feature branch: `git push origin claude/board-game-scorer-design-ScVoF`
+2. Push directo a main (fast-forward, sin pasar por GitHub merge): `git push origin claude/board-game-scorer-design-ScVoF:main`
+3. Sincronizar local: `git fetch origin && git reset --hard origin/main`
+
+Esto evita los merge commits de GitHub que tienen committer incorrecto (`noreply@github.com`).
+**No usar** `mcp__github__merge_pull_request` — genera commits con committer de GitHub.
 
 ## Convenciones de commits
 - Usar prefijos: `feat:`, `fix:`, `chore:`, `docs:`
