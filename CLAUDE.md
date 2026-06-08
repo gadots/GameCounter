@@ -8,12 +8,13 @@ Desarrollar siempre en `claude/board-game-scorer-design-ScVoF`. Nunca pushear di
 
 ## Git workflow (automático)
 Después de commitear cambios en el feature branch:
-1. Push al feature branch: `git push origin claude/board-game-scorer-design-ScVoF`
-2. Push directo a main (fast-forward, sin pasar por GitHub merge): `git push origin claude/board-game-scorer-design-ScVoF:main`
-3. Sincronizar local: `git fetch origin && git reset --hard origin/main`
+1. Push al feature branch: `git push -u origin claude/board-game-scorer-design-ScVoF`
+2. Crear PR con `mcp__github__create_pull_request` (si no existe ya uno abierto)
+3. Mergear el PR con `mcp__github__merge_pull_request` usando `merge_method: squash`
+4. Sincronizar local: `git fetch origin main && git reset --hard origin/main`
 
-Esto evita los merge commits de GitHub que tienen committer incorrecto (`noreply@github.com`).
-**No usar** `mcp__github__merge_pull_request` — genera commits con committer de GitHub.
+Usar **squash merge** siempre para mantener el historial de main limpio (un commit por PR).
+Si ya existe un PR abierto para la rama, solo pushear y mergear — no crear uno nuevo.
 
 ## Convenciones de commits
 - Usar prefijos: `feat:`, `fix:`, `chore:`, `docs:`
