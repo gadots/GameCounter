@@ -120,5 +120,25 @@ export function useSession(sessionId: string | null) {
     refresh();
   }, [session, refresh]);
 
-  return { session, createSession, submitRound, endSession, refresh };
+  // Removes the last submitted round from storage and returns its raw_inputs
+  // so the UI can pre-fill the form for re-entry.
+  const undoLastRound = useCallback((): Record<string, InputValues> | null => {
+    if (!session || session.current_round <= 1) return null;
+    const prevRound = session.current_round - 1;
+
+    const prevInputs: Record<string, InputValues> = {};
+    session.player_ids.forEach(pid => {
+      const score = session.scores.find(s => s.player_id === pid && s.round === prevRound);
+      if (score) prevInputs[pid] = score.raw_inputs;
+    });
+
+    sessionsStorage.update(session.id, {
+      scores: session.scores.filter(s => s.round !== prevRound),
+      current_round: prevRound,
+    });
+    refresh();
+    return prevInputs;
+  }, [session, refresh]);
+
+  return { session, createSession, submitRound, endSession, undoLastRound, refresh };
 }

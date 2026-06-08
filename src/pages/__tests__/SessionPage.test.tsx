@@ -79,6 +79,7 @@ describe('SessionPage — modal de salida', () => {
       endSession: mockEndSession,
       refresh: vi.fn(),
       createSession: vi.fn(),
+      undoLastRound: vi.fn(),
     });
   });
 
@@ -129,6 +130,7 @@ describe('SessionPage — estados de sesión', () => {
       endSession: vi.fn(),
       refresh: vi.fn(),
       createSession: vi.fn(),
+      undoLastRound: vi.fn(),
     });
     render(<SessionPage />);
     expect(screen.getByText('Sesión no encontrada.')).toBeInTheDocument();
@@ -141,6 +143,7 @@ describe('SessionPage — estados de sesión', () => {
       endSession: vi.fn(),
       refresh: vi.fn(),
       createSession: vi.fn(),
+      undoLastRound: vi.fn(),
     });
     render(<SessionPage />);
     expect(screen.getByText('¡Ganó Ana!')).toBeInTheDocument();
@@ -155,6 +158,7 @@ describe('SessionPage — estados de sesión', () => {
       endSession: vi.fn(),
       refresh: vi.fn(),
       createSession: vi.fn(),
+      undoLastRound: vi.fn(),
     });
     render(<SessionPage />);
     fireEvent.click(screen.getByText('Nueva partida'));
@@ -168,6 +172,7 @@ describe('SessionPage — estados de sesión', () => {
       endSession: vi.fn(),
       refresh: vi.fn(),
       createSession: vi.fn(),
+      undoLastRound: vi.fn(),
     });
     render(<SessionPage />);
     fireEvent.click(screen.getByText('Ver historial'));
@@ -181,6 +186,7 @@ describe('SessionPage — estados de sesión', () => {
       endSession: mockEndSession,
       refresh: vi.fn(),
       createSession: vi.fn(),
+      undoLastRound: vi.fn(),
     });
     render(<SessionPage />);
     expect(screen.getByText('Catan')).toBeInTheDocument();

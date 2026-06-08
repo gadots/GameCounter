@@ -13,7 +13,7 @@ import type { InputValues } from '../lib/types';
 export function SessionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { session, submitRound, endSession } = useSession(id ?? null);
+  const { session, submitRound, endSession, undoLastRound } = useSession(id ?? null);
   const { players } = usePlayers();
 
   const module = session ? getGameModule(session.game_id) : null;
@@ -103,6 +103,13 @@ export function SessionPage() {
 
   const isLastPlayer = activePlayer === session.player_ids.length - 1;
 
+  const handleUndoRound = () => {
+    const prevInputs = undoLastRound();
+    if (prevInputs) setRoundInputs(prevInputs);
+    setActivePlayer(0);
+    setError(null);
+  };
+
   return (
     <>
       <div className="p-4 space-y-4">
@@ -163,6 +170,12 @@ export function SessionPage() {
             ? (module.metadata.scoring_mode === 'end_of_game' ? 'Calcular ganador' : 'Registrar ronda')
             : `Siguiente: ${players.find(p => p.id === session.player_ids[activePlayer + 1])?.name ?? '...'}`}
         </Button>
+
+        {module.metadata.scoring_mode === 'per_round' && session.current_round > 1 && (
+          <Button variant="secondary" className="w-full" onClick={handleUndoRound}>
+            ← Editar ronda {session.current_round - 1}
+          </Button>
+        )}
 
         {session.scores.length > 0 && module.metadata.scoring_mode === 'per_round' && (
           <ScoreTable session={session} module={module} players={players} />
