@@ -83,6 +83,14 @@ describe('sessionsStorage', () => {
     expect(sessionsStorage.getById('s1')?.status).toBe('completed');
     expect(sessionsStorage.getActive()).toBeNull();
   });
+
+  it('removes a session by id', () => {
+    sessionsStorage.add(makeSession('s1', 'completed'));
+    sessionsStorage.add(makeSession('s2', 'completed'));
+    sessionsStorage.remove('s1');
+    expect(sessionsStorage.getById('s1')).toBeNull();
+    expect(sessionsStorage.getById('s2')).not.toBeNull();
+  });
 });
 
 describe('installedGamesStorage', () => {

@@ -54,6 +54,9 @@ export const sessionsStorage = {
     const all = sessionsStorage.getAll().map(s => s.id === id ? { ...s, ...patch } : s);
     sessionsStorage.save(all);
   },
+  remove: (id: string) => {
+    sessionsStorage.save(sessionsStorage.getAll().filter(s => s.id !== id));
+  },
 };
 
 // ─── Installed Games ──────────────────────────────────────────────────────
