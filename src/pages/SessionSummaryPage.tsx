@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { getGameModule } from '../lib/gameLoader';
 import { computePlayerTotals, withWinners } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 
 export function SessionSummaryPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const session = id ? sessionsStorage.getById(id) : null;
   const module = session ? getGameModule(session.game_id) : null;
@@ -91,6 +94,24 @@ export function SessionSummaryPage() {
       <Button className="w-full" onClick={() => navigate('/session/new')}>
         Nueva partida
       </Button>
+
+      <button
+        className="w-full text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300 py-1 transition-colors"
+        onClick={() => setShowDeleteModal(true)}
+      >
+        Borrar esta partida
+      </button>
+
+      <Modal
+        open={showDeleteModal}
+        title="¿Borrar partida?"
+        description={`${session.game_name} — ${date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}`}
+        confirmLabel="Borrar"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={() => { sessionsStorage.remove(session.id); navigate('/history'); }}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 }
