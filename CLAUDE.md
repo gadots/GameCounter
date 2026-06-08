@@ -14,7 +14,7 @@ Después de commitear cambios en el feature branch:
    → GitHub detecta que los commits del PR ya están en main y lo cierra como "merged" automáticamente
 4. Sincronizar local: `git fetch origin main && git reset --hard origin/main`
 
-**NO usar** `mcp__github__merge_pull_request` — el commit de merge lo hace GitHub con su propio committer (`noreply@github.com`), lo que dispara el stop hook.
+⚠️ **NUNCA usar** `mcp__github__merge_pull_request` — GitHub crea el commit de merge con committer `noreply@github.com`, lo que dispara el stop hook. El paso 3 (push directo `feature:main`) cierra el PR automáticamente sin crear ningún commit nuevo.
 Si ya existe un PR abierto para la rama, omitir el paso 2.
 
 ## Convenciones de commits
