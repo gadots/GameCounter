@@ -2,12 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
-import { Modal } from '../components/ui/Modal';
 
 export function HistoryPage() {
   const [filterPlayer, setFilterPlayer] = useState('');
-  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
-  const [, forceUpdate] = useState(0);
   const navigate = useNavigate();
 
   const sessions = sessionsStorage.getAll()
@@ -19,15 +16,6 @@ export function HistoryPage() {
   const filtered = filterPlayer
     ? sessions.filter(s => s.player_ids.includes(filterPlayer))
     : sessions;
-
-  const handleDelete = () => {
-    if (!pendingDelete) return;
-    sessionsStorage.remove(pendingDelete);
-    setPendingDelete(null);
-    forceUpdate(n => n + 1);
-  };
-
-  const sessionToDelete = sessions.find(s => s.id === pendingDelete);
 
   return (
     <div className="p-4 space-y-4">
@@ -60,8 +48,8 @@ export function HistoryPage() {
               className="cursor-pointer hover:ring-2 hover:ring-indigo-200 dark:hover:ring-indigo-700 transition-all"
               onClick={() => navigate(`/history/${session.id}`)}
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between">
+                <div>
                   <p className="font-semibold text-gray-800 dark:text-gray-100">{session.game_name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -71,37 +59,17 @@ export function HistoryPage() {
                     {session.player_ids.map(id => players.find(p => p.id === id)?.name ?? id).join(', ')}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {winners.length > 0 && (
-                    <div className="text-right">
-                      <span className="text-base">🏆</span>
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-200">{winners.join(', ')}</p>
-                    </div>
-                  )}
-                  <button
-                    className="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors"
-                    onClick={e => { e.stopPropagation(); setPendingDelete(session.id); }}
-                    aria-label="Borrar partida"
-                  >
-                    🗑️
-                  </button>
-                </div>
+                {winners.length > 0 && (
+                  <div className="text-right shrink-0 ml-2">
+                    <span className="text-base">🏆</span>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-200">{winners.join(', ')}</p>
+                  </div>
+                )}
               </div>
             </Card>
           );
         })}
       </div>
-
-      <Modal
-        open={pendingDelete !== null}
-        title="¿Borrar partida?"
-        description={sessionToDelete ? `${sessionToDelete.game_name} — ${new Date(sessionToDelete.completed_at ?? sessionToDelete.started_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
-        confirmLabel="Borrar"
-        cancelLabel="Cancelar"
-        confirmVariant="danger"
-        onConfirm={handleDelete}
-        onCancel={() => setPendingDelete(null)}
-      />
     </div>
   );
 }
