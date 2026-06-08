@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { usePlayers } from '../hooks/usePlayers';
@@ -21,10 +21,13 @@ export function SessionPage() {
   const [activePlayer, setActivePlayer] = useState(0);
   const [roundInputs, setRoundInputs] = useState<Record<string, InputValues>>({});
   const [error, setError] = useState<string | null>(null);
+  const exitingRef = useRef(false);
 
-  // Block navigation away from an active session
+  // Block navigation away from an active session.
+  // exitingRef bypasses the blocker when we navigate programmatically on confirm.
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
+      !exitingRef.current &&
       session?.status === 'active' &&
       currentLocation.pathname !== nextLocation.pathname
   );
@@ -174,7 +177,7 @@ export function SessionPage() {
         confirmLabel="Salir"
         cancelLabel="Seguir jugando"
         confirmVariant="danger"
-        onConfirm={() => { blocker.reset?.(); navigate('/session/new'); }}
+        onConfirm={() => { exitingRef.current = true; blocker.reset?.(); navigate('/session/new'); }}
         onCancel={() => blocker.reset?.()}
       />
     </>
