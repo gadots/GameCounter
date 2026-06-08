@@ -174,7 +174,7 @@ export function SessionPage() {
         confirmLabel="Salir"
         cancelLabel="Seguir jugando"
         confirmVariant="danger"
-        onConfirm={() => blocker.proceed?.()}
+        onConfirm={() => { blocker.reset?.(); navigate('/session/new'); }}
         onCancel={() => blocker.reset?.()}
       />
     </>
