@@ -1,46 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayers } from '../hooks/usePlayers';
-import { sessionsStorage } from '../lib/storage';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Modal } from '../components/ui/Modal';
-import type { Player } from '../lib/types';
 
 export function PlayersPage() {
-  const { players, addPlayer, removePlayer } = usePlayers();
+  const { players, addPlayer } = usePlayers();
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [pendingDelete, setPendingDelete] = useState<Player | null>(null);
 
   const handleAdd = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
     addPlayer(trimmed);
     setName('');
-  };
-
-  const handleConfirmDelete = () => {
-    if (!pendingDelete) return;
-    const activeSession = sessionsStorage.getActive();
-    if (activeSession?.player_ids.includes(pendingDelete.id)) {
-      sessionsStorage.update(activeSession.id, { status: 'abandoned' });
-    }
-    removePlayer(pendingDelete.id);
-    setPendingDelete(null);
-  };
-
-  const getDeleteDescription = (player: Player): string => {
-    const activeSession = sessionsStorage.getActive();
-    if (activeSession?.player_ids.includes(player.id)) {
-      return `Está en la partida activa de ${activeSession.game_name}. Esa partida quedará eliminada.`;
-    }
-    const completedCount = sessionsStorage.getAll()
-      .filter(s => s.status === 'completed' && s.player_ids.includes(player.id)).length;
-    if (completedCount > 0) {
-      return `Participó en ${completedCount} partida${completedCount !== 1 ? 's' : ''}. El historial se conserva.`;
-    }
-    return '¿Confirmar eliminación?';
   };
 
   return (
@@ -81,28 +54,12 @@ export function PlayersPage() {
               {player.avatar_emoji}
             </div>
             <p className="flex-1 font-medium text-gray-800 dark:text-gray-100">{player.name}</p>
-            <button
-              onClick={e => { e.stopPropagation(); setPendingDelete(player); }}
-              className="text-gray-400 hover:text-red-500 text-sm transition-colors p-1"
-            >
-              ✕
-            </button>
+            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
           </Card>
         ))}
       </div>
-
-      {pendingDelete && (
-        <Modal
-          open={true}
-          title={`¿Eliminar a ${pendingDelete.name}?`}
-          description={getDeleteDescription(pendingDelete)}
-          confirmLabel="Eliminar"
-          cancelLabel="Cancelar"
-          confirmVariant="danger"
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setPendingDelete(null)}
-        />
-      )}
     </div>
   );
 }

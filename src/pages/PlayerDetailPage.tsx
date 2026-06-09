@@ -5,6 +5,7 @@ import { computeStreak } from '../lib/sessionEngine';
 import { usePlayers } from '../hooks/usePlayers';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 
 const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#14b8a6'];
 const EMOJIS = ['🎲', '🏆', '⭐', '🎯', '🃏', '🎮', '🎪', '🎭'];
@@ -12,7 +13,7 @@ const EMOJIS = ['🎲', '🏆', '⭐', '🎯', '🃏', '🎮', '🎪', '🎭'];
 export function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { updatePlayer } = usePlayers();
+  const { updatePlayer, removePlayer } = usePlayers();
 
   const player = id ? playersStorage.getAll().find(p => p.id === id) ?? null : null;
 
@@ -20,6 +21,7 @@ export function PlayerDetailPage() {
   const [color, setColor] = useState(player?.color ?? COLORS[0]);
   const [emoji, setEmoji] = useState(player?.avatar_emoji ?? EMOJIS[0]);
   const [saved, setSaved] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   if (!player) {
     return <div className="p-4 text-gray-400">Jugador no encontrado.</div>;
@@ -34,6 +36,28 @@ export function PlayerDetailPage() {
   const gameCounts: Record<string, number> = {};
   played.forEach(s => { gameCounts[s.game_name] = (gameCounts[s.game_name] ?? 0) + 1; });
   const favGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+
+  const deleteDescription = (() => {
+    const activeSession = sessionsStorage.getActive();
+    if (activeSession?.player_ids.includes(player.id)) {
+      return `Está en la partida activa de ${activeSession.game_name}. Esa partida quedará eliminada.`;
+    }
+    const completedCount = sessionsStorage.getAll()
+      .filter(s => s.status === 'completed' && s.player_ids.includes(player.id)).length;
+    if (completedCount > 0) {
+      return `Participó en ${completedCount} partida${completedCount !== 1 ? 's' : ''}. El historial se conserva.`;
+    }
+    return '¿Confirmar eliminación?';
+  })();
+
+  const handleConfirmDelete = () => {
+    const activeSession = sessionsStorage.getActive();
+    if (activeSession?.player_ids.includes(player.id)) {
+      sessionsStorage.update(activeSession.id, { status: 'abandoned' });
+    }
+    removePlayer(player.id);
+    navigate('/players');
+  };
 
   const handleSave = () => {
     const trimmed = name.trim();
@@ -118,6 +142,24 @@ export function PlayerDetailPage() {
       <Button variant="secondary" className="w-full" onClick={() => navigate(`/history?player=${player.id}`)}>
         Ver partidas
       </Button>
+
+      <button
+        className="w-full text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300 py-1 transition-colors"
+        onClick={() => setShowDeleteModal(true)}
+      >
+        Eliminar jugador
+      </button>
+
+      <Modal
+        open={showDeleteModal}
+        title={`¿Eliminar a ${player.name}?`}
+        description={deleteDescription}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </div>
   );
 }
