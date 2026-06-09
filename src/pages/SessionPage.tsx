@@ -3,7 +3,7 @@ import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { usePlayers } from '../hooks/usePlayers';
 import { getGameModule } from '../lib/gameLoader';
-import { computePlayerTotals, withWinners } from '../lib/sessionEngine';
+import { computePlayerTotals, withWinners, resolvePlayerName } from '../lib/sessionEngine';
 import { InputRenderer } from '../components/ui/InputRenderer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -39,7 +39,7 @@ export function SessionPage() {
   if (session.status === 'completed') {
     const totals = withWinners(computePlayerTotals(session, module));
     const winners = totals.filter(t => t.is_winner);
-    const winnerNames = winners.map(t => players.find(p => p.id === t.player_id)?.name ?? 'Desconocido').join(', ');
+    const winnerNames = winners.map(t => resolvePlayerName(t.player_id, players, session)).join(', ');
 
     return (
       <div className="p-4 space-y-6">

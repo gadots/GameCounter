@@ -1,4 +1,4 @@
-import type { Session, PlayerTotals } from './types';
+import type { Session, PlayerTotals, Player } from './types';
 import type { GameModule } from './types';
 
 export function computePlayerTotals(session: Session, _module: GameModule): PlayerTotals[] {
@@ -37,4 +37,27 @@ export function isTargetReached(totals: PlayerTotals[], gameModule: GameModule):
 export function withWinners(totals: PlayerTotals[]): PlayerTotals[] {
   const winnerIds = new Set(determineWinners(totals));
   return totals.map(t => ({ ...t, is_winner: winnerIds.has(t.player_id) }));
+}
+
+export function resolvePlayerName(playerId: string, players: Player[], session: Session): string {
+  return players.find(p => p.id === playerId)?.name
+    ?? session.player_name_snapshots?.[playerId]
+    ?? 'Desconocido';
+}
+
+export function computeStreak(sessions: Session[], playerId: string): { count: number; type: 'win' | 'loss' | 'none' } {
+  const played = sessions
+    .filter(s => s.status === 'completed' && s.player_ids.includes(playerId))
+    .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime());
+
+  if (played.length === 0) return { count: 0, type: 'none' };
+
+  const firstIsWin = (played[0].winner_ids ?? []).includes(playerId);
+  let count = 0;
+  for (const s of played) {
+    const isWin = (s.winner_ids ?? []).includes(playerId);
+    if (isWin === firstIsWin) count++;
+    else break;
+  }
+  return { count, type: firstIsWin ? 'win' : 'loss' };
 }

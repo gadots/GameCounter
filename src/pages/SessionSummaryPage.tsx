@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { getGameModule } from '../lib/gameLoader';
-import { computePlayerTotals, withWinners } from '../lib/sessionEngine';
+import { computePlayerTotals, withWinners, resolvePlayerName } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -47,7 +47,7 @@ export function SessionSummaryPage() {
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0" style={{ backgroundColor: (player?.color ?? '#6366f1') + '33' }}>
                   {player?.avatar_emoji ?? '🎲'}
                 </div>
-                <span className="flex-1 text-gray-800 dark:text-gray-100">{player?.name ?? 'Jugador'}</span>
+                <span className="flex-1 text-gray-800 dark:text-gray-100">{resolvePlayerName(t.player_id, players, session)}</span>
                 {t.is_winner && <span>🏆</span>}
                 <span className="text-lg text-gray-900 dark:text-white">{t.grand_total}</span>
               </div>
@@ -72,10 +72,9 @@ export function SessionSummaryPage() {
               </thead>
               <tbody>
                 {totals.sort((a, b) => b.grand_total - a.grand_total).map(t => {
-                  const player = players.find(p => p.id === t.player_id);
                   return (
                     <tr key={t.player_id} className="border-t border-gray-100 dark:border-gray-700">
-                      <td className="py-2 text-gray-700 dark:text-gray-200">{player?.name}</td>
+                      <td className="py-2 text-gray-700 dark:text-gray-200">{resolvePlayerName(t.player_id, players, session)}</td>
                       {t.round_scores.map((score, i) => (
                         <td key={i} className={`text-center px-2 py-2 ${score < 0 ? 'text-red-500' : 'text-gray-700 dark:text-gray-200'}`}>
                           {score}

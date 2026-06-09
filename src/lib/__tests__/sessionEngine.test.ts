@@ -5,8 +5,10 @@ import {
   withWinners,
   computeScore,
   isTargetReached,
+  resolvePlayerName,
+  computeStreak,
 } from '../sessionEngine';
-import type { Session, GameModule } from '../types';
+import type { Session, GameModule, Player } from '../types';
 
 const mockModule: GameModule = {
   metadata: {
@@ -151,5 +153,84 @@ describe('isTargetReached', () => {
       { player_id: 'a', round_scores: [], grand_total: 999, is_winner: false },
     ];
     expect(isTargetReached(totals, mockModule)).toBe(false);
+  });
+});
+
+const mockPlayer: Player = { id: 'p1', name: 'Ana', color: '#6366f1', avatar_emoji: '🎲', created_at: '' };
+
+function makeCompletedSession(id: string, playerIds: string[], winnerIds: string[], date: string): Session {
+  return {
+    id,
+    game_id: 'test',
+    game_name: 'Test',
+    player_ids: playerIds,
+    status: 'completed',
+    current_round: 1,
+    scores: [],
+    started_at: date,
+    completed_at: date,
+    winner_ids: winnerIds,
+  };
+}
+
+describe('resolvePlayerName', () => {
+  const session: Session = {
+    id: 's1', game_id: 'test', game_name: 'Test', player_ids: ['p1'],
+    status: 'completed', current_round: 1, scores: [], started_at: '',
+    player_name_snapshots: { p1: 'Ana (snapshot)', p2: 'Bob (snapshot)' },
+  };
+
+  it('returns live player name when player exists', () => {
+    expect(resolvePlayerName('p1', [mockPlayer], session)).toBe('Ana');
+  });
+
+  it('falls back to snapshot when player not in list', () => {
+    expect(resolvePlayerName('p2', [mockPlayer], session)).toBe('Bob (snapshot)');
+  });
+
+  it('falls back to Desconocido when neither player nor snapshot exists', () => {
+    expect(resolvePlayerName('p99', [mockPlayer], session)).toBe('Desconocido');
+  });
+
+  it('returns Desconocido when session has no snapshots', () => {
+    const noSnapshot: Session = { ...session, player_name_snapshots: undefined };
+    expect(resolvePlayerName('p99', [], noSnapshot)).toBe('Desconocido');
+  });
+});
+
+describe('computeStreak', () => {
+  it('returns none when player has no completed sessions', () => {
+    expect(computeStreak([], 'p1')).toEqual({ count: 0, type: 'none' });
+  });
+
+  it('counts a win streak', () => {
+    const sessions = [
+      makeCompletedSession('s1', ['p1'], ['p1'], '2024-01-03T00:00:00.000Z'),
+      makeCompletedSession('s2', ['p1'], ['p1'], '2024-01-02T00:00:00.000Z'),
+      makeCompletedSession('s3', ['p1'], [], '2024-01-01T00:00:00.000Z'),
+    ];
+    expect(computeStreak(sessions, 'p1')).toEqual({ count: 2, type: 'win' });
+  });
+
+  it('counts a loss streak', () => {
+    const sessions = [
+      makeCompletedSession('s1', ['p1', 'p2'], ['p2'], '2024-01-03T00:00:00.000Z'),
+      makeCompletedSession('s2', ['p1', 'p2'], ['p2'], '2024-01-02T00:00:00.000Z'),
+      makeCompletedSession('s3', ['p1'], ['p1'], '2024-01-01T00:00:00.000Z'),
+    ];
+    expect(computeStreak(sessions, 'p1')).toEqual({ count: 2, type: 'loss' });
+  });
+
+  it('counts single-session streak', () => {
+    const sessions = [makeCompletedSession('s1', ['p1'], ['p1'], '2024-01-01T00:00:00.000Z')];
+    expect(computeStreak(sessions, 'p1')).toEqual({ count: 1, type: 'win' });
+  });
+
+  it('ignores sessions where player did not participate', () => {
+    const sessions = [
+      makeCompletedSession('s1', ['p1'], ['p1'], '2024-01-02T00:00:00.000Z'),
+      makeCompletedSession('s2', ['p2'], ['p2'], '2024-01-01T00:00:00.000Z'),
+    ];
+    expect(computeStreak(sessions, 'p1')).toEqual({ count: 1, type: 'win' });
   });
 });

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { sessionsStorage } from '../lib/storage';
+import { sessionsStorage, playersStorage } from '../lib/storage';
 import type { Session, InputValues, RoundScore, InputDef } from '../lib/types';
 import { computeScore } from '../lib/sessionEngine';
 import { getGameModule } from '../lib/gameLoader';
@@ -33,6 +33,13 @@ export function useSession(sessionId: string | null) {
       sessionsStorage.update(active.id, { status: 'abandoned' });
     }
 
+    const allPlayers = playersStorage.getAll();
+    const player_name_snapshots: Record<string, string> = {};
+    player_ids.forEach(pid => {
+      const p = allPlayers.find(pl => pl.id === pid);
+      if (p) player_name_snapshots[pid] = p.name;
+    });
+
     const newSession: Session = {
       id: uuid(),
       game_id,
@@ -42,6 +49,7 @@ export function useSession(sessionId: string | null) {
       current_round: 1,
       scores: [],
       started_at: new Date().toISOString(),
+      player_name_snapshots,
     };
     sessionsStorage.add(newSession);
     refresh();

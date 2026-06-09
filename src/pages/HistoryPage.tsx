@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sessionsStorage, playersStorage } from '../lib/storage';
+import { resolvePlayerName } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 
 export function HistoryPage() {
-  const [filterPlayer, setFilterPlayer] = useState('');
+  const [searchParams] = useSearchParams();
+  const [filterPlayer, setFilterPlayer] = useState(searchParams.get('player') ?? '');
   const navigate = useNavigate();
 
   const sessions = sessionsStorage.getAll()
@@ -38,7 +40,7 @@ export function HistoryPage() {
 
       <div className="space-y-3">
         {filtered.map(session => {
-          const winners = (session.winner_ids ?? []).map(id => players.find(p => p.id === id)?.name ?? 'Desconocido');
+          const winners = (session.winner_ids ?? []).map(id => resolvePlayerName(id, players, session));
           const date = new Date(session.completed_at ?? session.started_at);
           const totalRounds = Math.max(...session.scores.map(s => s.round), 0);
 
@@ -56,7 +58,7 @@ export function HistoryPage() {
                     {totalRounds > 1 && ` · ${totalRounds} rondas`}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {session.player_ids.map(id => players.find(p => p.id === id)?.name ?? id).join(', ')}
+                    {session.player_ids.map(id => resolvePlayerName(id, players, session)).join(', ')}
                   </p>
                 </div>
                 {winners.length > 0 && (
