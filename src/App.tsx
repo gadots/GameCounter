@@ -11,7 +11,7 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 function AppLayout() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900" style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
       <div className="max-w-lg mx-auto">
         <Outlet />
       </div>

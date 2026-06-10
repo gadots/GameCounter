@@ -5,7 +5,10 @@ export function BottomNav() {
   const activeSession = sessionsStorage.getActive();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex z-10">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex z-10"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {/* Library tab */}
       <NavLink
         to="/library"
