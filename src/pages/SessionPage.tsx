@@ -3,11 +3,12 @@ import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { usePlayers } from '../hooks/usePlayers';
 import { getGameModule } from '../lib/gameLoader';
-import { computePlayerTotals, withWinners, resolvePlayerName } from '../lib/sessionEngine';
+import { computePlayerTotals, withWinners, resolvePlayerName, isTargetReached } from '../lib/sessionEngine';
 import { InputRenderer } from '../components/ui/InputRenderer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { sessionsStorage, settingsStorage } from '../lib/storage';
 import type { InputValues } from '../lib/types';
 
 export function SessionPage() {
@@ -99,6 +100,16 @@ export function SessionPage() {
     submitRound(roundInputs);
     setRoundInputs({});
     setActivePlayer(0);
+
+    if (module.metadata.target_score) {
+      const fresh = sessionsStorage.getById(session.id);
+      if (fresh && fresh.status === 'active') {
+        const totals = computePlayerTotals(fresh, module);
+        if (isTargetReached(totals, module)) {
+          endSession();
+        }
+      }
+    }
   };
 
   const isLastPlayer = activePlayer === session.player_ids.length - 1;
@@ -179,7 +190,7 @@ export function SessionPage() {
           </Button>
         )}
 
-        {session.scores.length > 0 && module.metadata.scoring_mode === 'per_round' && (
+        {session.scores.length > 0 && module.metadata.scoring_mode === 'per_round' && settingsStorage.get().show_running_totals && (
           <ScoreTable session={session} module={module} players={players} />
         )}
       </div>

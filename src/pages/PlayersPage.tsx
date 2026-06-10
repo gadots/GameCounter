@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePlayers } from '../hooks/usePlayers';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Settings } from 'lucide-react';
 
 export function PlayersPage() {
   const { players, addPlayer } = usePlayers();
@@ -18,7 +19,12 @@ export function PlayersPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jugadores</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jugadores</h1>
+        <button onClick={() => navigate('/settings')} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+          <Settings size={20} />
+        </button>
+      </div>
 
       <Card>
         <div className="flex gap-2">

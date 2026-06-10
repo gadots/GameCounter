@@ -4,19 +4,27 @@ import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Star } from 'lucide-react';
 
 export function LibraryPage() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'all' | 'installed'>('all');
-  const { installed, install, uninstall, isInstalled } = useInstalledGames();
+  const { installed, install, uninstall, isInstalled, toggleFavorite } = useInstalledGames();
   const navigate = useNavigate();
 
   const allModules = getGameModules();
-  const filtered = allModules.filter(m => {
-    const matchesSearch = m.metadata.name.toLowerCase().includes(search.toLowerCase());
-    const matchesTab = tab === 'all' || isInstalled(m.metadata.id);
-    return matchesSearch && matchesTab;
-  });
+  const filtered = allModules
+    .filter(m => {
+      const matchesSearch = m.metadata.name.toLowerCase().includes(search.toLowerCase());
+      const matchesTab = tab === 'all' || isInstalled(m.metadata.id);
+      return matchesSearch && matchesTab;
+    })
+    .sort((a, b) => {
+      if (tab !== 'installed') return 0;
+      const aFav = installed.find(g => g.game_id === a.metadata.id)?.is_favorite ? 1 : 0;
+      const bFav = installed.find(g => g.game_id === b.metadata.id)?.is_favorite ? 1 : 0;
+      return bFav - aFav;
+    });
 
   return (
     <div className="p-4 space-y-4">
@@ -71,21 +79,35 @@ export function LibraryPage() {
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-2 shrink-0">
-                {inst ? (
-                  <>
-                    <Button size="sm" onClick={() => navigate(`/session/new?game=${m.metadata.id}`)}>
-                      Jugar
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => uninstall(m.metadata.id)}>
-                      Quitar
-                    </Button>
-                  </>
-                ) : (
-                  <Button size="sm" variant="secondary" onClick={() => install(m.metadata.id)}>
-                    + Instalar
-                  </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {inst && (
+                  <button
+                    onClick={() => toggleFavorite(m.metadata.id)}
+                    className="p-1.5 transition-colors"
+                    aria-label="Favorito"
+                  >
+                    {installed.find(g => g.game_id === m.metadata.id)?.is_favorite
+                      ? <Star size={18} className="text-indigo-500" fill="currentColor" />
+                      : <Star size={18} className="text-gray-300 dark:text-gray-600" />
+                    }
+                  </button>
                 )}
+                <div className="flex flex-col gap-2">
+                  {inst ? (
+                    <>
+                      <Button size="sm" onClick={() => navigate(`/session/new?game=${m.metadata.id}`)}>
+                        Jugar
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => uninstall(m.metadata.id)}>
+                        Quitar
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="secondary" onClick={() => install(m.metadata.id)}>
+                      + Instalar
+                    </Button>
+                  )}
+                </div>
               </div>
             </Card>
           );

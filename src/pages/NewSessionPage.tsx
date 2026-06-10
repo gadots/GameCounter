@@ -12,7 +12,9 @@ import { Modal } from '../components/ui/Modal';
 export function NewSessionPage() {
   const [searchParams] = useSearchParams();
   const [selectedGame, setSelectedGame] = useState(searchParams.get('game') ?? '');
-  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
+    () => searchParams.get('players')?.split(',').filter(Boolean) ?? []
+  );
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const navigate = useNavigate();
 

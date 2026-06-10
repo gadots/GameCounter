@@ -7,6 +7,7 @@ import { PlayersPage } from './pages/PlayersPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { SessionSummaryPage } from './pages/SessionSummaryPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 function AppLayout() {
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: 'players/:id', element: <PlayerDetailPage /> },
       { path: 'history', element: <HistoryPage /> },
       { path: 'history/:id', element: <SessionSummaryPage /> },
+      { path: 'settings', element: <SettingsPage /> },
     ],
   },
 ]);

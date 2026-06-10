@@ -90,9 +90,22 @@ export function SessionSummaryPage() {
         </Card>
       )}
 
-      <Button className="w-full" onClick={() => navigate('/session/new')}>
-        Nueva partida
-      </Button>
+      {module.metadata.tiebreaker_hint && (
+        <p className="text-xs text-gray-400 italic text-center px-2">{module.metadata.tiebreaker_hint}</p>
+      )}
+
+      <div className="flex gap-2">
+        <Button
+          className="flex-1"
+          variant="secondary"
+          onClick={() => navigate(`/session/new?game=${session.game_id}&players=${session.player_ids.join(',')}`)}
+        >
+          Revancha
+        </Button>
+        <Button className="flex-1" onClick={() => navigate('/session/new')}>
+          Nueva partida
+        </Button>
+      </div>
 
       <button
         className="w-full text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300 py-1 transition-colors"
