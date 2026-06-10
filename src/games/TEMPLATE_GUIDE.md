@@ -1,7 +1,6 @@
 # GameCounter — Guía para crear módulos de juego
 
-Este archivo te enseña a crear un módulo de juego válido para GameCounter.
-Seguí cada sección antes de escribir código. La app valida los módulos al cargar — uno inválido se descarta con un warning en consola.
+Cada juego es un archivo `.ts` en este directorio. Vite los detecta con `import.meta.glob` — no hay que registrar nada en el resto de la app. La app valida los módulos al cargar; uno inválido se descarta con un warning en consola.
 
 ---
 
@@ -184,15 +183,17 @@ export default {
 
 ## Edge cases
 
-**Puntos negativos:** La función `score()` puede devolver números negativos. No hay restricción.
+**Puntos negativos:** `score()` puede devolver números negativos. Se muestran en rojo en la tabla de puntajes.
 
-**Sin target_score:** La mayoría de juegos euro (Wingspan, Ticket to Ride) terminan por evento (se acaban las cartas, se completan X rondas), no por puntaje. Omitir `target_score` y usar `total_rounds` para `per_round`, o simplemente dejar que el usuario termine la partida manualmente para `end_of_game`.
+**target_score — partida que termina sola:** Si definís `target_score`, la app verifica automáticamente después de cada ronda (en `per_round`) o al calcular el total final (en `end_of_game`). Cuando al menos un jugador llega o supera el objetivo, la sesión se cierra y se navega al resumen. Ejemplos reales: UNO (`target_score: 500`) y Splendor (`target_score: 15`).
 
-**Lógica que depende de otros jugadores:** La función `score()` solo recibe los valores del jugador actual. Si el scoring de un jugador depende de lo que hicieron otros (ej: "mayoría de algo"), modelalo como `toggle` — el usuario decide quién tiene la mayoría y le activa el toggle. La lógica de quién "gana" la mayoría queda fuera de la función.
+**Sin target_score:** Juegos que terminan por evento (se acaban las cartas, se completan X rondas): omitir `target_score`. Para `per_round` usar `total_rounds`; para `end_of_game` el usuario presiona "Terminar" manualmente.
 
-**`direct` vs `stepper` con multiplicador 1:** Usá `stepper` cuando el usuario ingresa una cantidad de piezas/cartas. Usá `number` cuando el usuario ingresa directamente un subtotal ya calculado (evitarlo si es posible — la idea es que la app haga los cálculos).
+**Lógica que depende de otros jugadores:** `score()` solo recibe los valores del jugador actual. Si el scoring depende de lo que hicieron los demás (ej: "mayoría de algo"), modelarlo como `toggle` — el usuario decide quién tiene la mayoría y le activa el toggle.
 
-**`validate()`:** Opcional pero recomendado para juegos con restricciones cruzadas (ej: en Skull King, `won` no puede ser mayor que `round`). Devuelve un string de error visible al usuario, o `null` si todo está bien.
+**`stepper` vs `number`:** Usá `stepper` cuando el usuario ingresa una cantidad de piezas/cartas y la app multiplica. Usá `number` cuando el usuario ingresa directamente un subtotal ya calculado.
+
+**`validate()`:** Opcional. Recomendado para restricciones cruzadas entre inputs. Devuelve un string de error visible al usuario, o `null` si todo está bien. Se llama antes de avanzar al siguiente jugador.
 
 ---
 
@@ -208,8 +209,20 @@ export default {
 ## Cómo testear tu módulo
 
 1. Copiar el archivo `.ts` a `src/games/`
-2. Correr `npm run dev` — si hay error de TypeScript, la consola lo muestra
-3. Ir a la Library → el juego debe aparecer en la lista
-4. Instalarlo, crear sesión con 2+ jugadores
-5. Ingresar valores borde (0, máximos) y verificar que `score()` devuelve lo esperado
-6. Verificar el tooltip de cada campo (campo `description`)
+2. Correr `npm run build` — TypeScript valida el módulo en el build
+3. Correr `npm run dev` → Librería → instalar el juego → crear sesión
+4. Ingresar valores borde (0, máximos) y verificar que `score()` calcula correctamente
+5. Si el juego tiene `target_score`, verificar que la sesión termina sola al alcanzarlo
+6. Verificar el tooltip de cada campo (`description`)
+
+---
+
+## Módulos incluidos
+
+| Archivo | Juego | Modo | Rondas | target |
+|---------|-------|------|--------|--------|
+| `catan.ts` | Catan | end_of_game | — | 10 VP |
+| `skull-king.ts` | Skull King | per_round | 10 | — |
+| `ticket-to-ride.ts` | Ticket to Ride | end_of_game | — | — |
+| `splendor.ts` | Splendor | end_of_game | — | 15 pts |
+| `uno.ts` | UNO | per_round | open | 500 pts |
