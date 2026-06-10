@@ -136,15 +136,17 @@ export function SessionPage() {
               <button
                 key={pid}
                 onClick={() => setActivePlayer(i)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm shrink-0 transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-all ${
                   i === activePlayer
-                    ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
-                    : 'bg-gray-100 dark:bg-gray-700'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                 }`}
               >
                 <span>{p?.avatar_emoji ?? '🎲'}</span>
-                <span className="font-medium text-gray-700 dark:text-gray-200">{p?.name ?? pid}</span>
-                {roundInputs[pid] && <span className="text-green-500 text-xs">✓</span>}
+                <span>{p?.name ?? pid}</span>
+                {roundInputs[pid] && (
+                  <span className={`text-xs ${i === activePlayer ? 'text-green-300' : 'text-green-500'}`}>✓</span>
+                )}
               </button>
             );
           })}
