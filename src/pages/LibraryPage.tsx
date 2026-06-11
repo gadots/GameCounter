@@ -39,7 +39,7 @@ export function LibraryPage() {
       />
 
       <div className="flex gap-2">
-        {(['all', 'installed'] as const).map(t => (
+        {(['installed', 'all'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
