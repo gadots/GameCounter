@@ -1,13 +1,77 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
 import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSession } from '../hooks/useSession';
 import { sessionsStorage } from '../lib/storage';
+import type { Player } from '../lib/types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+
+interface SortableItemProps {
+  pid: string;
+  index: number;
+  players: Player[];
+  animating: 'dice' | 'cards' | null;
+}
+
+function SortablePlayerItem({ pid, index, players, animating }: SortableItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pid });
+  const p = players.find(pl => pl.id === pid);
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    ...(animating === 'cards' && !isDragging
+      ? { animation: `card-flip 0.5s ease-in-out ${index * 90}ms both` }
+      : {}),
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 transition-shadow ${isDragging ? 'shadow-lg opacity-80 z-10 relative' : ''}`}
+    >
+      <span className="text-xs font-bold text-gray-400 w-5 shrink-0">{index + 1}°</span>
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0"
+        style={{ backgroundColor: (p?.color ?? '#6366f1') + '33' }}
+      >
+        {p?.avatar_emoji ?? '🎲'}
+      </div>
+      <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">{p?.name ?? pid}</span>
+      <button
+        className="touch-none text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 cursor-grab active:cursor-grabbing p-1 -mr-1"
+        {...attributes}
+        {...listeners}
+        tabIndex={-1}
+      >
+        <GripVertical size={18} />
+      </button>
+    </div>
+  );
+}
 
 export function NewSessionPage() {
   const [searchParams] = useSearchParams();
@@ -23,6 +87,11 @@ export function NewSessionPage() {
   const { isInstalled } = useInstalledGames();
   const { players } = usePlayers();
   const { createSession } = useSession(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const activeSession = sessionsStorage.getActive();
   const installedModules = getGameModules().filter(m => isInstalled(m.metadata.id));
@@ -47,6 +116,18 @@ export function NewSessionPage() {
     setTimeout(() => setAnimating(null), 700);
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setSelectedPlayers(prev => {
+        const oldIndex = prev.indexOf(active.id as string);
+        const newIndex = prev.indexOf(over.id as string);
+        return arrayMove(prev, oldIndex, newIndex);
+      });
+      setShuffled(true);
+    }
+  };
+
   const canStart =
     selectedModule &&
     selectedPlayers.length >= selectedModule.metadata.min_players &&
@@ -66,7 +147,6 @@ export function NewSessionPage() {
     navigate(`/session/${id}`);
   };
 
-  // If there's an active session and no new game selected yet, show the resume screen
   if (activeSession && !selectedGame) {
     const activePlayers = activeSession.player_ids
       .map(pid => players.find(p => p.id === pid)?.name ?? 'Jugador')
@@ -203,24 +283,22 @@ export function NewSessionPage() {
                 {shuffled ? '↺ Mezclar de nuevo' : 'Orden aleatorio'}
               </button>
             </div>
-            <div className="flex flex-col gap-1.5">
-              {selectedPlayers.map((pid, i) => {
-                const p = players.find(pl => pl.id === pid);
-                return (
-                  <div
-                    key={pid}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/60"
-                    style={animating === 'cards' ? { animation: `card-flip 0.5s ease-in-out ${i * 90}ms both` } : {}}
-                  >
-                    <span className="text-xs font-bold text-gray-400 w-5 shrink-0">{i + 1}°</span>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0" style={{ backgroundColor: (p?.color ?? '#6366f1') + '33' }}>
-                      {p?.avatar_emoji ?? '🎲'}
-                    </div>
-                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{p?.name ?? pid}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={selectedPlayers} strategy={verticalListSortingStrategy}>
+                <div className="flex flex-col gap-1.5">
+                  {selectedPlayers.map((pid, i) => (
+                    <SortablePlayerItem
+                      key={pid}
+                      pid={pid}
+                      index={i}
+                      players={players}
+                      animating={animating}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+            <p className="text-xs text-gray-400 text-center pt-0.5">Arrastrá las filas para cambiar el orden</p>
           </section>
         )}
 
