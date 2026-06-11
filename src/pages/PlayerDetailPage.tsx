@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { playersStorage, sessionsStorage } from '../lib/storage';
-import { computeStreak } from '../lib/sessionEngine';
+import { computeStreak, computeHeadToHead, computeGameStats } from '../lib/sessionEngine';
 import { usePlayers } from '../hooks/usePlayers';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -28,6 +28,7 @@ export function PlayerDetailPage() {
   }
 
   const allSessions = sessionsStorage.getAll();
+  const allPlayers = playersStorage.getAll();
   const played = allSessions.filter(s => s.status === 'completed' && s.player_ids.includes(player.id));
   const won = played.filter(s => (s.winner_ids ?? []).includes(player.id)).length;
   const winrate = played.length > 0 ? Math.round((won / played.length) * 100) : 0;
@@ -36,6 +37,19 @@ export function PlayerDetailPage() {
   const gameCounts: Record<string, number> = {};
   played.forEach(s => { gameCounts[s.game_name] = (gameCounts[s.game_name] ?? 0) + 1; });
   const favGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+
+  const recentSessions = [...played]
+    .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())
+    .slice(0, 5);
+  const gameStats = computeGameStats(player.id, allSessions);
+  const h2h = computeHeadToHead(player.id, allSessions);
+
+  const nameSnapshot: Record<string, string> = {};
+  allSessions.forEach(s => Object.entries(s.player_name_snapshots ?? {}).forEach(([pid, n]) => {
+    if (!nameSnapshot[pid]) nameSnapshot[pid] = n;
+  }));
+  const resolveOpponent = (pid: string) => allPlayers.find(p => p.id === pid)?.name ?? nameSnapshot[pid] ?? 'Desconocido';
+  const opponentPlayer = (pid: string) => allPlayers.find(p => p.id === pid);
 
   const deleteDescription = (() => {
     const activeSession = sessionsStorage.getActive();
@@ -138,6 +152,63 @@ export function PlayerDetailPage() {
           <p className="font-medium text-gray-800 dark:text-gray-100 mt-0.5">{favGame}</p>
         </div>
       </Card>
+
+      {recentSessions.length > 0 && (
+        <Card>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Últimas partidas</p>
+          <div className="space-y-2">
+            {recentSessions.map(s => {
+              const winners = s.winner_ids ?? [];
+              const isWin = winners.includes(player.id);
+              const isTie = isWin && winners.length > 1;
+              return (
+                <div key={s.id} className="flex items-center gap-3">
+                  <span className="text-base w-5 shrink-0">{isTie ? '🤝' : isWin ? '🏆' : '💀'}</span>
+                  <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{s.game_name}</span>
+                  <span className="text-xs text-gray-400 shrink-0">
+                    {new Date(s.completed_at ?? s.started_at).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {gameStats.length >= 2 && (
+        <Card>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Por juego</p>
+          <div className="space-y-2">
+            {gameStats.map(g => (
+              <div key={g.gameId} className="flex items-center gap-3">
+                <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{g.gameName}</span>
+                <span className="text-xs text-gray-400 shrink-0">{g.played}P</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white w-10 text-right shrink-0">{g.winRate}%</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {h2h.length > 0 && (
+        <Card>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Head-to-head</p>
+          <div className="space-y-3">
+            {h2h.map(match => {
+              const opp = opponentPlayer(match.opponentId);
+              return (
+                <div key={match.opponentId} className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0" style={{ backgroundColor: (opp?.color ?? '#6366f1') + '33' }}>
+                    {opp?.avatar_emoji ?? '🎲'}
+                  </div>
+                  <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{resolveOpponent(match.opponentId)}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white shrink-0">{match.wins}–{match.losses}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       <Button variant="secondary" className="w-full" onClick={() => navigate(`/history?player=${player.id}`)}>
         Ver partidas

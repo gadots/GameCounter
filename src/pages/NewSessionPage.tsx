@@ -16,6 +16,8 @@ export function NewSessionPage() {
     () => searchParams.get('players')?.split(',').filter(Boolean) ?? []
   );
   const [showAbandonModal, setShowAbandonModal] = useState(false);
+  const [shuffled, setShuffled] = useState(false);
+  const [animating, setAnimating] = useState<'dice' | 'cards' | null>(null);
   const navigate = useNavigate();
 
   const { isInstalled } = useInstalledGames();
@@ -30,6 +32,19 @@ export function NewSessionPage() {
     setSelectedPlayers(prev =>
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
+  };
+
+  const handleShuffle = () => {
+    const arr = [...selectedPlayers];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    setSelectedPlayers(arr);
+    const type = Math.random() > 0.5 ? 'dice' : 'cards';
+    setAnimating(type);
+    setShuffled(true);
+    setTimeout(() => setAnimating(null), 700);
   };
 
   const canStart =
@@ -153,6 +168,59 @@ export function NewSessionPage() {
                 Necesitás {selectedModule.metadata.min_players}–{selectedModule.metadata.max_players} jugadores.
               </p>
             )}
+          </section>
+        )}
+
+        {selectedPlayers.length >= 2 && (
+          <section className="space-y-2">
+            <style>{`
+              @keyframes dice-spin {
+                0%   { transform: rotate(0deg) scale(1); }
+                20%  { transform: rotate(-30deg) scale(1.5); }
+                55%  { transform: rotate(20deg) scale(1.3); }
+                80%  { transform: rotate(-10deg) scale(1.1); }
+                100% { transform: rotate(0deg) scale(1); }
+              }
+              @keyframes card-flip {
+                0%   { transform: scaleX(1); opacity: 1; }
+                35%  { transform: scaleX(0); opacity: 0.2; }
+                65%  { transform: scaleX(0); opacity: 0.2; }
+                100% { transform: scaleX(1); opacity: 1; }
+              }
+            `}</style>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                Orden de turno
+              </h2>
+              <button
+                onClick={handleShuffle}
+                disabled={!!animating}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 transition-opacity disabled:opacity-50"
+              >
+                <span style={animating === 'dice' ? { display: 'inline-block', animation: 'dice-spin 0.65s ease-in-out' } : {}}>
+                  🎲
+                </span>
+                {shuffled ? '↺ Mezclar de nuevo' : 'Orden aleatorio'}
+              </button>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {selectedPlayers.map((pid, i) => {
+                const p = players.find(pl => pl.id === pid);
+                return (
+                  <div
+                    key={pid}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800/60"
+                    style={animating === 'cards' ? { animation: `card-flip 0.5s ease-in-out ${i * 90}ms both` } : {}}
+                  >
+                    <span className="text-xs font-bold text-gray-400 w-5 shrink-0">{i + 1}°</span>
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0" style={{ backgroundColor: (p?.color ?? '#6366f1') + '33' }}>
+                      {p?.avatar_emoji ?? '🎲'}
+                    </div>
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{p?.name ?? pid}</span>
+                  </div>
+                );
+              })}
+            </div>
           </section>
         )}
 

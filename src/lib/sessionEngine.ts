@@ -61,3 +61,41 @@ export function computeStreak(sessions: Session[], playerId: string): { count: n
   }
   return { count, type: firstIsWin ? 'win' : 'loss' };
 }
+
+export function computeHeadToHead(
+  playerId: string,
+  sessions: Session[],
+): { opponentId: string; wins: number; losses: number; total: number }[] {
+  const completed = sessions.filter(s => s.status === 'completed' && s.player_ids.includes(playerId));
+  const h2h: Record<string, { wins: number; losses: number }> = {};
+  for (const s of completed) {
+    const isWin = (s.winner_ids ?? []).includes(playerId);
+    for (const opponentId of s.player_ids) {
+      if (opponentId === playerId) continue;
+      if (!h2h[opponentId]) h2h[opponentId] = { wins: 0, losses: 0 };
+      if (isWin) h2h[opponentId].wins++;
+      else h2h[opponentId].losses++;
+    }
+  }
+  return Object.entries(h2h)
+    .map(([opponentId, { wins, losses }]) => ({ opponentId, wins, losses, total: wins + losses }))
+    .sort((a, b) => b.total - a.total);
+}
+
+export function computeGameStats(
+  playerId: string,
+  sessions: Session[],
+): { gameId: string; gameName: string; played: number; won: number; winRate: number }[] {
+  const completed = sessions.filter(s => s.status === 'completed' && s.player_ids.includes(playerId));
+  const stats: Record<string, { gameName: string; played: number; won: number }> = {};
+  for (const s of completed) {
+    if (!stats[s.game_id]) stats[s.game_id] = { gameName: s.game_name, played: 0, won: 0 };
+    stats[s.game_id].played++;
+    if ((s.winner_ids ?? []).includes(playerId)) stats[s.game_id].won++;
+  }
+  return Object.entries(stats)
+    .map(([gameId, { gameName, played, won }]) => ({
+      gameId, gameName, played, won, winRate: Math.round((won / played) * 100),
+    }))
+    .sort((a, b) => b.played - a.played);
+}
