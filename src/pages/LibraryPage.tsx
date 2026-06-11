@@ -8,7 +8,7 @@ import { Star } from 'lucide-react';
 
 export function LibraryPage() {
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'all' | 'installed'>('all');
+  const [tab, setTab] = useState<'all' | 'installed'>('installed');
   const { installed, install, uninstall, isInstalled, toggleFavorite } = useInstalledGames();
   const navigate = useNavigate();
 
@@ -49,7 +49,7 @@ export function LibraryPage() {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}
           >
-            {t === 'all' ? `Todos (${allModules.length})` : `Instalados (${installed.length})`}
+            {t === 'all' ? `Todos (${allModules.length})` : `Librería (${installed.length})`}
           </button>
         ))}
       </div>
