@@ -9,14 +9,14 @@ export async function syncSession(session: Session): Promise<void> {
   if (error) console.error('[sharing] sync failed:', error.message);
 }
 
-export async function startSharing(session: Session): Promise<string | null> {
-  if (!supabase) return null;
+export async function startSharing(session: Session): Promise<{ url: string } | { error: string }> {
+  if (!supabase) return { error: 'Supabase no configurado' };
   const { error } = await supabase
     .from('shared_sessions')
     .upsert({ id: session.id, payload: session, updated_at: new Date().toISOString() });
   if (error) {
-    console.error('[sharing] startSharing failed:', error.message);
-    return null;
+    console.error('[sharing] startSharing failed:', error);
+    return { error: `${error.code ?? ''} ${error.message}` };
   }
-  return `${window.location.origin}/share/${session.id}`;
+  return { url: `${window.location.origin}/share/${session.id}` };
 }

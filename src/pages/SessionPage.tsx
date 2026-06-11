@@ -124,11 +124,11 @@ export function SessionPage() {
   const isLastPlayer = activePlayer === session.player_ids.length - 1;
 
   const handleShare = async () => {
-    const url = await startSharing(session);
-    if (!url) { setError('No se pudo activar el sharing. Revisá la consola.'); return; }
+    const result = await startSharing(session);
+    if ('error' in result) { setError(`Sharing error: ${result.error}`); return; }
     setSharing(true);
     setError(null);
-    await navigator.clipboard.writeText(url).catch(() => {});
+    await navigator.clipboard.writeText(result.url).catch(() => {});
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2500);
   };
