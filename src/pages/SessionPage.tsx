@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { usePlayers } from '../hooks/usePlayers';
@@ -9,6 +9,9 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { sessionsStorage, settingsStorage } from '../lib/storage';
+import { supabase } from '../lib/supabase';
+import { startSharing, syncSession } from '../lib/sharing';
+import { Share2, Check } from 'lucide-react';
 import type { InputValues } from '../lib/types';
 
 export function SessionPage() {
@@ -22,7 +25,13 @@ export function SessionPage() {
   const [activePlayer, setActivePlayer] = useState(0);
   const [roundInputs, setRoundInputs] = useState<Record<string, InputValues>>({});
   const [error, setError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const exitingRef = useRef(false);
+
+  useEffect(() => {
+    if (sharing && session) syncSession(session);
+  }, [session, sharing]);
 
   // Block navigation away from an active session.
   // exitingRef bypasses the blocker when we navigate programmatically on confirm.
@@ -114,6 +123,15 @@ export function SessionPage() {
 
   const isLastPlayer = activePlayer === session.player_ids.length - 1;
 
+  const handleShare = async () => {
+    const url = await startSharing(session);
+    if (!url) return;
+    setSharing(true);
+    await navigator.clipboard.writeText(url).catch(() => {});
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2500);
+  };
+
   const handleUndoRound = () => {
     const prevInputs = undoLastRound();
     if (prevInputs) setRoundInputs(prevInputs);
@@ -133,11 +151,26 @@ export function SessionPage() {
               </p>
             )}
           </div>
-          {module.metadata.scoring_mode === 'end_of_game' && (
-            <Button variant="ghost" size="sm" onClick={endSession}>
-              Terminar
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {supabase && (
+              <button
+                onClick={handleShare}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                  sharing
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                }`}
+              >
+                {shareCopied ? <Check size={14} /> : <Share2 size={14} />}
+                <span>{shareCopied ? 'Copiado' : sharing ? 'En vivo' : 'Compartir'}</span>
+              </button>
+            )}
+            {module.metadata.scoring_mode === 'end_of_game' && (
+              <Button variant="ghost" size="sm" onClick={endSession}>
+                Terminar
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">

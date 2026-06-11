@@ -8,6 +8,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { SessionSummaryPage } from './pages/SessionSummaryPage';
 import { PlayerDetailPage } from './pages/PlayerDetailPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { SharePage } from './pages/SharePage';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 function AppLayout() {
@@ -22,6 +23,7 @@ function AppLayout() {
 }
 
 const router = createBrowserRouter([
+  { path: 'share/:id', element: <SharePage /> },
   {
     path: '/',
     element: <AppLayout />,
