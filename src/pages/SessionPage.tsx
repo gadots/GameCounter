@@ -125,8 +125,9 @@ export function SessionPage() {
 
   const handleShare = async () => {
     const url = await startSharing(session);
-    if (!url) return;
+    if (!url) { setError('No se pudo activar el sharing. Revisá la consola.'); return; }
     setSharing(true);
+    setError(null);
     await navigator.clipboard.writeText(url).catch(() => {});
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2500);
