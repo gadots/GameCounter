@@ -13,11 +13,14 @@ export function LibraryPage() {
   const navigate = useNavigate();
 
   const allModules = getGameModules();
+  const matchesSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
+  const countAll = allModules.filter(m => matchesSearch(m.metadata.name)).length;
+  const countInstalled = allModules.filter(m => matchesSearch(m.metadata.name) && isInstalled(m.metadata.id)).length;
+
   const filtered = allModules
     .filter(m => {
-      const matchesSearch = m.metadata.name.toLowerCase().includes(search.toLowerCase());
       const matchesTab = tab === 'all' || isInstalled(m.metadata.id);
-      return matchesSearch && matchesTab;
+      return matchesSearch(m.metadata.name) && matchesTab;
     })
     .sort((a, b) => {
       if (tab !== 'installed') return 0;
@@ -49,7 +52,7 @@ export function LibraryPage() {
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}
           >
-            {t === 'all' ? `Todos (${allModules.length})` : `Librería (${installed.length})`}
+            {t === 'all' ? `Todos (${countAll})` : `Librería (${countInstalled})`}
           </button>
         ))}
       </div>
