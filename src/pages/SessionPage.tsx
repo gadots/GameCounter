@@ -62,17 +62,28 @@ export function SessionPage() {
         </div>
 
         <div className="space-y-2">
-          {totals.sort((a, b) => b.grand_total - a.grand_total).map(t => {
+          {totals.sort((a, b) => b.grand_total - a.grand_total).map((t, rank) => {
             const player = players.find(p => p.id === t.player_id);
+            const color = player?.color ?? '#6366f1';
             return (
-              <Card key={t.player_id} className={`flex items-center gap-3 ${t.is_winner ? 'ring-2 ring-yellow-400' : ''}`}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ backgroundColor: (player?.color ?? '#6366f1') + '33' }}>
+              <div
+                key={t.player_id}
+                className="flex items-center gap-3 rounded-2xl p-3 transition-all"
+                style={{
+                  backgroundColor: t.is_winner ? color + '18' : undefined,
+                  boxShadow: t.is_winner ? `0 0 0 2px ${color}66` : undefined,
+                }}
+              >
+                <span className="text-sm text-gray-400 w-4 shrink-0">{rank + 1}</span>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: color + '33' }}>
                   {player?.avatar_emoji ?? '🎲'}
                 </div>
-                <p className="flex-1 font-medium text-gray-800 dark:text-gray-100">{player?.name ?? 'Jugador'}</p>
-                <span className="text-xl font-bold text-gray-900 dark:text-white">{t.grand_total}</span>
-                {t.is_winner && <span>🏆</span>}
-              </Card>
+                <p className="flex-1 font-medium text-gray-800 dark:text-gray-100">{resolvePlayerName(t.player_id, players, session)}</p>
+                {t.is_winner && <span className="text-base">🏆</span>}
+                <span className="score-num text-2xl font-bold" style={{ color: t.is_winner ? color : undefined }}>
+                  {t.grand_total}
+                </span>
+              </div>
             );
           })}
         </div>
@@ -177,20 +188,21 @@ export function SessionPage() {
         <div className="flex gap-2 overflow-x-auto pb-1">
           {session.player_ids.map((pid, i) => {
             const p = players.find(pl => pl.id === pid);
+            const color = p?.color ?? '#6366f1';
+            const isActive = i === activePlayer;
             return (
               <button
                 key={pid}
                 onClick={() => setActivePlayer(i)}
+                style={isActive ? { backgroundColor: color, color: '#fff' } : {}}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-all ${
-                  i === activePlayer
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  isActive ? '' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
                 }`}
               >
                 <span>{p?.avatar_emoji ?? '🎲'}</span>
                 <span>{p?.name ?? pid}</span>
                 {roundInputs[pid] && (
-                  <span className={`text-xs ${i === activePlayer ? 'text-green-300' : 'text-green-500'}`}>✓</span>
+                  <span className={`text-xs ${isActive ? 'text-green-200' : 'text-green-500'}`}>✓</span>
                 )}
               </button>
             );
@@ -245,18 +257,32 @@ export function SessionPage() {
 }
 
 function ScoreTable({ session, module, players }: { session: any; module: any; players: any[] }) {
-  const totals = computePlayerTotals(session, module);
+  const totals = computePlayerTotals(session, module).sort((a, b) => b.grand_total - a.grand_total);
+  const leader = totals[0];
   return (
     <Card>
       <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Puntajes acumulados</p>
       <div className="space-y-2">
-        {totals.sort((a, b) => b.grand_total - a.grand_total).map(t => {
+        {totals.map((t, rank) => {
           const p = players.find((pl: any) => pl.id === t.player_id);
+          const color = p?.color ?? '#6366f1';
+          const isLeader = t.player_id === leader?.player_id;
           return (
             <div key={t.player_id} className="flex items-center gap-3">
-              <span className="text-sm">{p?.avatar_emoji ?? '🎲'}</span>
-              <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{p?.name}</span>
-              <span className={`font-bold ${t.grand_total < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0"
+                style={{ backgroundColor: color + '33' }}
+              >
+                {p?.avatar_emoji ?? '🎲'}
+              </div>
+              <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{p?.name ?? 'Jugador'}</span>
+              {isLeader && rank === 0 && totals.length > 1 && (
+                <span className="text-xs text-yellow-500 font-medium">👑</span>
+              )}
+              <span
+                className={`score-num text-2xl font-bold ${t.grand_total < 0 ? 'text-red-500' : ''}`}
+                style={t.grand_total >= 0 ? { color } : {}}
+              >
                 {t.grand_total}
               </span>
             </div>

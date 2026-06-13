@@ -22,7 +22,8 @@ import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSession } from '../hooks/useSession';
-import { sessionsStorage } from '../lib/storage';
+import { sessionsStorage, playersStorage } from '../lib/storage';
+import { resolvePlayerName } from '../lib/sessionEngine';
 import type { Player } from '../lib/types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -128,6 +129,17 @@ export function NewSessionPage() {
     }
   };
 
+  const allPlayers = playersStorage.getAll();
+  const lastSession = sessionsStorage.getAll()
+    .filter(s => s.status === 'completed')
+    .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())[0] ?? null;
+  const lastWinnerId = lastSession?.winner_ids?.[0];
+  const lastWinnerPlayer = lastWinnerId ? allPlayers.find(p => p.id === lastWinnerId) : null;
+  const lastWinnerColor = lastWinnerPlayer?.color ?? '#6366f1';
+  const lastWinnerName = lastSession && lastWinnerId
+    ? resolvePlayerName(lastWinnerId, allPlayers, lastSession)
+    : null;
+
   const canStart =
     selectedModule &&
     selectedPlayers.length >= selectedModule.metadata.min_players &&
@@ -191,6 +203,30 @@ export function NewSessionPage() {
     <>
       <div className="p-4 space-y-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva partida</h1>
+
+        {!selectedGame && lastSession && (
+          <section>
+            <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Última partida</h2>
+            <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+              <div className="h-1 w-full" style={{ backgroundColor: lastWinnerColor }} />
+              <div className="flex items-center gap-3 p-4">
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{lastSession.game_name}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(lastSession.completed_at ?? lastSession.started_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                    {lastWinnerName && ` · 🏆 ${lastWinnerName}`}
+                  </p>
+                </div>
+                <button
+                  className="ml-auto shrink-0 px-3 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white active:bg-indigo-700"
+                  onClick={() => navigate(`/session/new?game=${lastSession.game_id}&players=${lastSession.player_ids.join(',')}`)}
+                >
+                  Revancha
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Juego</h2>

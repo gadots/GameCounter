@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { resolvePlayerName } from '../lib/sessionEngine';
-import { Card } from '../components/ui/Card';
 import { HistoryFilters, type FilterState } from '../components/HistoryFilters';
+import type { Session, Player } from '../lib/types';
+
+function winnerColor(session: Session, players: Player[]): string {
+  const winnerId = session.winner_ids?.[0];
+  if (!winnerId) return '#6366f1';
+  return players.find(p => p.id === winnerId)?.color ?? '#6366f1';
+}
 
 export function HistoryPage() {
   const [searchParams] = useSearchParams();
@@ -46,35 +52,70 @@ export function HistoryPage() {
 
       <div className="space-y-3">
         {filtered.map(session => {
-          const winners = (session.winner_ids ?? []).map(id => resolvePlayerName(id, players, session));
+          const color = winnerColor(session, players);
+          const winners = session.winner_ids ?? [];
+          const isTie = winners.length > 1;
+          const primaryWinnerId = winners[0];
+          const primaryWinner = primaryWinnerId
+            ? { name: resolvePlayerName(primaryWinnerId, players, session), player: players.find(p => p.id === primaryWinnerId) }
+            : null;
           const date = new Date(session.completed_at ?? session.started_at);
           const totalRounds = Math.max(...session.scores.map(s => s.round), 0);
 
           return (
-            <Card
+            <div
               key={session.id}
-              className="cursor-pointer hover:ring-2 hover:ring-indigo-200 dark:hover:ring-indigo-700 transition-all"
+              className="rounded-2xl bg-white dark:bg-gray-800 overflow-hidden cursor-pointer shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
               onClick={() => navigate(`/history/${session.id}`)}
             >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-gray-800 dark:text-gray-100">{session.game_name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    {totalRounds > 1 && ` · ${totalRounds} rondas`}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {session.player_ids.map(id => resolvePlayerName(id, players, session)).join(', ')}
-                  </p>
-                </div>
-                {winners.length > 0 && (
-                  <div className="text-right shrink-0 ml-2">
-                    <span className="text-base">🏆</span>
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-200">{winners.join(', ')}</p>
+              <div className="h-1 w-full" style={{ backgroundColor: color }} />
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{session.game_name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {totalRounds > 1 && ` · ${totalRounds} rondas`}
+                    </p>
                   </div>
-                )}
+                  {primaryWinner && (
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {isTie
+                        ? <span className="text-sm">🤝</span>
+                        : <span className="text-sm">🏆</span>}
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0"
+                        style={{ backgroundColor: (primaryWinner.player?.color ?? '#6366f1') + '33' }}
+                      >
+                        {primaryWinner.player?.avatar_emoji ?? '🎲'}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 max-w-[80px] truncate">
+                        {primaryWinner.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-3">
+                  {session.player_ids.map(pid => {
+                    const p = players.find(pl => pl.id === pid);
+                    const isWinner = winners.includes(pid);
+                    return (
+                      <div
+                        key={pid}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all ${isWinner ? 'ring-2' : ''}`}
+                        style={{
+                          backgroundColor: (p?.color ?? '#6366f1') + '22',
+                          boxShadow: isWinner ? `0 0 0 2px ${color}` : undefined,
+                        }}
+                        title={resolvePlayerName(pid, players, session)}
+                      >
+                        {p?.avatar_emoji ?? '🎲'}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>
