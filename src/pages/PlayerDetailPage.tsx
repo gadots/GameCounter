@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { playersStorage, sessionsStorage } from '../lib/storage';
-import { computeStreak, computeHeadToHead, computeGameStats, computeEloRatings } from '../lib/sessionEngine';
+import { computeStreak, computeHeadToHead, computeGameStats, computeEloRatings, computeEloHistory } from '../lib/sessionEngine';
 import { usePlayers } from '../hooks/usePlayers';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -40,6 +40,7 @@ export function PlayerDetailPage() {
   const favGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
 
   const elo = played.length > 0 ? (computeEloRatings(allSessions)[player.id] ?? 1000) : null;
+  const eloHistory = computeEloHistory(player.id, allSessions);
 
   const recentSessions = [...played]
     .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())
@@ -171,6 +172,20 @@ export function PlayerDetailPage() {
         </div>
       </Card>
 
+      {eloHistory.length >= 2 && (
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold text-gray-400 uppercase">Progresión ELO</p>
+            <span className="text-xs text-gray-400">base 1000</span>
+          </div>
+          <EloChart history={eloHistory} />
+          <div className="flex justify-between mt-1.5 text-xs text-gray-400">
+            <span>{new Date(eloHistory[0].date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>
+            <span>{new Date(eloHistory[eloHistory.length - 1].date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}</span>
+          </div>
+        </Card>
+      )}
+
       {recentSessions.length > 0 && (
         <Card>
           <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Últimas partidas</p>
@@ -250,6 +265,58 @@ export function PlayerDetailPage() {
         onCancel={() => setShowDeleteModal(false)}
       />
     </div>
+  );
+}
+
+function EloChart({ history }: { history: { elo: number; game_name: string; date: string }[] }) {
+  const W = 300, H = 80;
+  const PAD = { top: 12, right: 8, bottom: 8, left: 8 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  const elos = history.map(h => h.elo);
+  const rawMin = Math.min(...elos, 1000);
+  const rawMax = Math.max(...elos, 1000);
+  // Add 10% headroom so the line isn't flush against the edges
+  const pad = Math.max((rawMax - rawMin) * 0.15, 8);
+  const minV = rawMin - pad;
+  const maxV = rawMax + pad;
+  const range = maxV - minV;
+
+  const toX = (i: number) => PAD.left + (history.length < 2 ? cW / 2 : (i / (history.length - 1)) * cW);
+  const toY = (v: number) => PAD.top + cH - ((v - minV) / range) * cH;
+
+  const pts = history.map((h, i) => ({ x: toX(i), y: toY(h.elo) }));
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const area = `${line} L${pts[pts.length - 1].x.toFixed(1)},${(PAD.top + cH).toFixed(1)} L${PAD.left},${(PAD.top + cH).toFixed(1)} Z`;
+  const baseY = toY(1000);
+
+  const showDots = history.length <= 14;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
+      <defs>
+        <linearGradient id="elo-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Baseline 1000 */}
+      <line
+        x1={PAD.left} y1={baseY} x2={W - PAD.right} y2={baseY}
+        stroke="#9ca3af" strokeWidth="1" strokeDasharray="4 3" strokeOpacity="0.45"
+      />
+      <path d={area} fill="url(#elo-grad)" />
+      <path d={line} fill="none" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {showDots && pts.map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r="3" fill="white" stroke="#6366f1" strokeWidth="1.5" />
+      ))}
+      {/* Always mark first and last */}
+      {!showDots && <>
+        <circle cx={pts[0].x} cy={pts[0].y} r="3" fill="white" stroke="#6366f1" strokeWidth="1.5" />
+        <circle cx={pts[pts.length-1].x} cy={pts[pts.length-1].y} r="3" fill="white" stroke="#6366f1" strokeWidth="1.5" />
+      </>}
+    </svg>
   );
 }
 

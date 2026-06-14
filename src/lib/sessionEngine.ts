@@ -100,6 +100,57 @@ export function computeGameStats(
     .sort((a, b) => b.played - a.played);
 }
 
+export function computeEloHistory(
+  playerId: string,
+  sessions: Session[],
+): { elo: number; game_name: string; date: string }[] {
+  const history: { elo: number; game_name: string; date: string }[] = [];
+  const ratings: Record<string, number> = {};
+  const K = 32;
+
+  const completed = [...sessions]
+    .filter(s => s.status === 'completed')
+    .sort((a, b) =>
+      new Date(a.completed_at ?? a.started_at).getTime() -
+      new Date(b.completed_at ?? b.started_at).getTime()
+    );
+
+  for (const session of completed) {
+    const pids = session.player_ids;
+    const n = pids.length;
+    if (n < 2) continue;
+    for (const pid of pids) if (!(pid in ratings)) ratings[pid] = 1000;
+
+    const winners = new Set(session.winner_ids ?? []);
+    const changes: Record<string, number> = {};
+    for (const pid of pids) changes[pid] = 0;
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const a = pids[i], b = pids[j];
+        const Ea = 1 / (1 + Math.pow(10, (ratings[b] - ratings[a]) / 400));
+        const aWon = winners.has(a), bWon = winners.has(b);
+        const Sa = (aWon && bWon) ? 0.5 : aWon ? 1 : bWon ? 0 : 0.5;
+        const delta = (K * (Sa - Ea)) / (n - 1);
+        changes[a] += delta;
+        changes[b] -= delta;
+      }
+    }
+
+    for (const pid of pids) ratings[pid] = Math.round(ratings[pid] + changes[pid]);
+
+    if (pids.includes(playerId)) {
+      history.push({
+        elo: ratings[playerId],
+        game_name: session.game_name,
+        date: session.completed_at ?? session.started_at,
+      });
+    }
+  }
+
+  return history;
+}
+
 // Multiplayer ELO: pairwise comparisons, K=32 divided by (n-1) to normalize.
 // Winners beat non-winners (1-0), co-winners tie (0.5), non-winners tie (0.5).
 export function computeEloRatings(sessions: Session[]): Record<string, number> {
