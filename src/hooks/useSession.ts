@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import type { Session, InputValues, RoundScore, InputDef } from '../lib/types';
 import { computeScore } from '../lib/sessionEngine';
@@ -14,15 +14,19 @@ function uuid() {
   return crypto.randomUUID();
 }
 
-export function useSession(sessionId: string | null) {
-  const [session, setSession] = useState<Session | null>(() =>
-    sessionId ? sessionsStorage.getById(sessionId) : sessionsStorage.getActive()
-  );
+// Reactive read-only access to all sessions. Re-renders subscribers whenever
+// the sessions store changes (including cross-tab), without re-parsing
+// localStorage on every render.
+export function useSessions() {
+  return useSyncExternalStore(sessionsStorage.subscribe, sessionsStorage.getAll);
+}
 
-  const refresh = useCallback(() => {
-    const s = sessionId ? sessionsStorage.getById(sessionId) : sessionsStorage.getActive();
-    setSession(s);
-  }, [sessionId]);
+export function useSession(sessionId: string | null) {
+  const getSnapshot = useCallback(
+    () => (sessionId ? sessionsStorage.getById(sessionId) : sessionsStorage.getActive()),
+    [sessionId],
+  );
+  const session = useSyncExternalStore(sessionsStorage.subscribe, getSnapshot);
 
   const createSession = useCallback((game_id: string, player_ids: string[]) => {
     const module = getGameModule(game_id);
@@ -52,9 +56,8 @@ export function useSession(sessionId: string | null) {
       player_name_snapshots,
     };
     sessionsStorage.add(newSession);
-    refresh();
     return newSession.id;
-  }, [refresh]);
+  }, []);
 
   const submitRound = useCallback((roundInputs: Record<string, InputValues>) => {
     if (!session) return;
@@ -102,9 +105,8 @@ export function useSession(sessionId: string | null) {
       completed_at: isDone ? new Date().toISOString() : undefined,
       winner_ids,
     });
-    refresh();
     return isDone;
-  }, [session, refresh]);
+  }, [session]);
 
   // Used by the manual "Terminar" button in end_of_game mode.
   // Reads scores directly from storage to avoid stale state.
@@ -112,7 +114,6 @@ export function useSession(sessionId: string | null) {
     if (!session) return;
     const fresh = sessionsStorage.getById(session.id);
     if (!fresh) return;
-    const module = getGameModule(fresh.game_id);
     const totals = fresh.player_ids.map(pid => ({
       player_id: pid,
       grand_total: fresh.scores.filter(s => s.player_id === pid).reduce((sum, s) => sum + s.computed_score, 0),
@@ -124,9 +125,7 @@ export function useSession(sessionId: string | null) {
       completed_at: new Date().toISOString(),
       winner_ids,
     });
-    void module; // module loaded for future use (e.g. tiebreaker)
-    refresh();
-  }, [session, refresh]);
+  }, [session]);
 
   // Removes the last submitted round from storage and returns its raw_inputs
   // so the UI can pre-fill the form for re-entry.
@@ -144,9 +143,8 @@ export function useSession(sessionId: string | null) {
       scores: session.scores.filter(s => s.round !== prevRound),
       current_round: prevRound,
     });
-    refresh();
     return prevInputs;
-  }, [session, refresh]);
+  }, [session]);
 
-  return { session, createSession, submitRound, endSession, undoLastRound, refresh };
+  return { session, createSession, submitRound, endSession, undoLastRound };
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from './Button';
 
 interface Props {
@@ -24,10 +24,28 @@ export function Modal({
   onCancel,
   children,
 }: Props) {
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  // Close on Escape and move focus to the primary action when the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', onKey);
+    confirmRef.current?.focus();
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onCancel]);
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
       <div className="absolute inset-0 bg-black/50" onClick={onCancel} />
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-xl">
         <div className="space-y-1">
@@ -38,12 +56,14 @@ export function Modal({
         </div>
         {children}
         <div className="flex flex-col gap-2 pt-1">
-          <Button variant={confirmVariant} className="w-full" onClick={onConfirm}>
+          <Button ref={confirmRef} variant={confirmVariant} className="w-full" onClick={onConfirm}>
             {confirmLabel}
           </Button>
-          <Button variant="ghost" className="w-full" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
+          {cancelLabel && (
+            <Button variant="ghost" className="w-full" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+          )}
         </div>
       </div>
     </div>

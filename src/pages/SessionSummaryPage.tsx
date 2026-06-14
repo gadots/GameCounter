@@ -9,10 +9,11 @@ import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Share2 } from 'lucide-react';
 import { useRef } from 'react';
+import type { Session, Player, PlayerTotals } from '../lib/types';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-function buildWhatsAppText(session: any, totals: any[], players: any[], date: Date): string {
+function buildWhatsAppText(session: Session, totals: PlayerTotals[], players: Player[], date: Date): string {
   const sorted = [...totals].sort((a, b) => b.grand_total - a.grand_total);
   const dateStr = date.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const lines = [

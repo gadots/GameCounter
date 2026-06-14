@@ -2,23 +2,25 @@ import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { usePlayers } from '../hooks/usePlayers';
+import { useSettings } from '../hooks/useSettings';
 import { getGameModule } from '../lib/gameLoader';
 import { computePlayerTotals, withWinners, resolvePlayerName, isTargetReached } from '../lib/sessionEngine';
 import { InputRenderer } from '../components/ui/InputRenderer';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { sessionsStorage, settingsStorage } from '../lib/storage';
+import { sessionsStorage } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { startSharing, syncSession } from '../lib/sharing';
 import { Share2, Check } from 'lucide-react';
-import type { InputValues } from '../lib/types';
+import type { InputValues, Session, GameModule, Player } from '../lib/types';
 
 export function SessionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { session, submitRound, endSession, undoLastRound } = useSession(id ?? null);
   const { players } = usePlayers();
+  const { settings } = useSettings();
 
   const module = session ? getGameModule(session.game_id) : null;
 
@@ -233,7 +235,7 @@ export function SessionPage() {
           </Button>
         )}
 
-        {session.scores.length > 0 && module.metadata.scoring_mode === 'per_round' && settingsStorage.get().show_running_totals && (
+        {session.scores.length > 0 && module.metadata.scoring_mode === 'per_round' && settings.show_running_totals && (
           <ScoreTable session={session} module={module} players={players} />
         )}
       </div>
@@ -253,7 +255,7 @@ export function SessionPage() {
   );
 }
 
-function ScoreTable({ session, module, players }: { session: any; module: any; players: any[] }) {
+function ScoreTable({ session, module, players }: { session: Session; module: GameModule; players: Player[] }) {
   const totals = computePlayerTotals(session, module).sort((a, b) => b.grand_total - a.grand_total);
   const leader = totals[0];
   return (
@@ -261,7 +263,7 @@ function ScoreTable({ session, module, players }: { session: any; module: any; p
       <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Puntajes acumulados</p>
       <div className="space-y-2">
         {totals.map((t, rank) => {
-          const p = players.find((pl: any) => pl.id === t.player_id);
+          const p = players.find(pl => pl.id === t.player_id);
           const color = p?.color ?? '#6366f1';
           const isLeader = t.player_id === leader?.player_id && totals.length > 1;
           return (

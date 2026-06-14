@@ -1,18 +1,23 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Library, ChevronRight } from 'lucide-react';
-import { sessionsStorage, playersStorage } from '../lib/storage';
+import { usePlayers } from '../hooks/usePlayers';
+import { useSessions } from '../hooks/useSession';
 import { resolvePlayerName } from '../lib/sessionEngine';
 import { PageHeader } from '../components/layout/PageHeader';
 
 export function HomePage() {
   const navigate = useNavigate();
 
-  const players = playersStorage.getAll();
-  const allSessions = sessionsStorage.getAll();
+  const { players } = usePlayers();
+  const allSessions = useSessions();
   const activeSession = allSessions.find(s => s.status === 'active') ?? null;
-  const completed = allSessions
-    .filter(s => s.status === 'completed')
-    .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime());
+  const completed = useMemo(
+    () => allSessions
+      .filter(s => s.status === 'completed')
+      .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime()),
+    [allSessions],
+  );
 
   const lastSession = completed[0] ?? null;
   const lastWinnerId = lastSession?.winner_ids?.[0];

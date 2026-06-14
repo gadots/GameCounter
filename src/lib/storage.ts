@@ -7,27 +7,81 @@ const KEYS = {
   settings: 'gc_settings',
 } as const;
 
+const KEY_SET = new Set<string>(Object.values(KEYS));
+
+// In-memory cache: localStorage is parsed once per key and the parsed value is
+// reused (referentially stable) until a write or a cross-tab change invalidates
+// it. This removes the per-render JSON.parse cost and lets useSyncExternalStore
+// return a stable snapshot.
+const cache = new Map<string, unknown>();
+const listeners = new Map<string, Set<() => void>>();
+
+function emit(key: string): void {
+  listeners.get(key)?.forEach(fn => fn());
+}
+
+// Drops the in-memory cache so subsequent reads re-parse from localStorage.
+// Intended for tests, which clear localStorage directly (bypassing `set`).
+export function resetStorageCache(): void {
+  cache.clear();
+}
+
+export function subscribe(key: string, listener: () => void): () => void {
+  let set = listeners.get(key);
+  if (!set) {
+    set = new Set();
+    listeners.set(key, set);
+  }
+  set.add(listener);
+  return () => {
+    set!.delete(listener);
+  };
+}
+
 function get<T>(key: string, fallback: T): T {
+  if (cache.has(key)) return cache.get(key) as T;
   try {
     const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
+    const value = raw ? (JSON.parse(raw) as T) : fallback;
+    cache.set(key, value);
+    return value;
   } catch {
+    cache.set(key, fallback);
     return fallback;
   }
 }
 
 function set<T>(key: string, value: T): void {
-  localStorage.setItem(key, JSON.stringify(value));
+  cache.set(key, value);
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Quota or serialization error — keep the in-memory value so the UI stays
+    // consistent within the session even if persistence failed.
+  }
+  emit(key);
+}
+
+// Cross-tab sync: another tab wrote to one of our keys. Drop the stale cache
+// entry so the next read re-parses, then notify subscribers.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', e => {
+    if (e.key && KEY_SET.has(e.key)) {
+      cache.delete(e.key);
+      emit(e.key);
+    }
+  });
 }
 
 // ─── Players ──────────────────────────────────────────────────────────────
 
 export const playersStorage = {
+  key: KEYS.players,
+  subscribe: (listener: () => void) => subscribe(KEYS.players, listener),
   getAll: (): Player[] => get<Player[]>(KEYS.players, []),
   save: (players: Player[]) => set(KEYS.players, players),
   add: (player: Player) => {
-    const all = playersStorage.getAll();
-    playersStorage.save([...all, player]);
+    playersStorage.save([...playersStorage.getAll(), player]);
   },
   update: (id: string, patch: Partial<Player>) => {
     const all = playersStorage.getAll().map(p => p.id === id ? { ...p, ...patch } : p);
@@ -41,6 +95,8 @@ export const playersStorage = {
 // ─── Sessions ─────────────────────────────────────────────────────────────
 
 export const sessionsStorage = {
+  key: KEYS.sessions,
+  subscribe: (listener: () => void) => subscribe(KEYS.sessions, listener),
   getAll: (): Session[] => get<Session[]>(KEYS.sessions, []),
   save: (sessions: Session[]) => set(KEYS.sessions, sessions),
   getActive: (): Session | null =>
@@ -62,6 +118,8 @@ export const sessionsStorage = {
 // ─── Installed Games ──────────────────────────────────────────────────────
 
 export const installedGamesStorage = {
+  key: KEYS.installedGames,
+  subscribe: (listener: () => void) => subscribe(KEYS.installedGames, listener),
   getAll: (): InstalledGame[] => get<InstalledGame[]>(KEYS.installedGames, []),
   save: (games: InstalledGame[]) => set(KEYS.installedGames, games),
   isInstalled: (game_id: string): boolean =>
@@ -92,6 +150,8 @@ const defaultSettings: AppSettings = {
 };
 
 export const settingsStorage = {
+  key: KEYS.settings,
+  subscribe: (listener: () => void) => subscribe(KEYS.settings, listener),
   get: (): AppSettings => get<AppSettings>(KEYS.settings, defaultSettings),
   update: (patch: Partial<AppSettings>) => {
     set(KEYS.settings, { ...settingsStorage.get(), ...patch });

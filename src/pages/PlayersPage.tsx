@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayers } from '../hooks/usePlayers';
-import { sessionsStorage } from '../lib/storage';
+import { useSessions } from '../hooks/useSession';
 import { computeEloRatings } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -23,33 +23,40 @@ export function PlayersPage() {
     setName('');
   };
 
-  const allSessions = sessionsStorage.getAll();
-  const completed = allSessions.filter(s => s.status === 'completed');
-  const eloRatings = computeEloRatings(allSessions);
+  const allSessions = useSessions();
 
-  const metrics = players
-    .map(p => {
-      const mySessions = completed.filter(s => s.player_ids.includes(p.id));
-      const wins = mySessions.filter(s => s.winner_ids?.includes(p.id)).length;
-      const gameCounts = mySessions.reduce((acc, s) => {
-        acc[s.game_name] = (acc[s.game_name] ?? 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-      const elo = eloRatings[p.id] ?? 1000;
-      return {
-        player: p,
-        sessions: mySessions.length,
-        wins,
-        winRate: mySessions.length > 0 ? Math.round((wins / mySessions.length) * 100) : 0,
-        topGame,
-        elo,
-      };
-    })
-    .filter(m => m.sessions > 0);
+  const { byElo, byWins } = useMemo(() => {
+    const completed = allSessions.filter(s => s.status === 'completed');
+    const eloRatings = computeEloRatings(allSessions);
 
-  const byElo = [...metrics].sort((a, b) => b.elo - a.elo || b.wins - a.wins);
-  const byWins = [...metrics].sort((a, b) => b.wins - a.wins || b.winRate - a.winRate);
+    const metrics = players
+      .map(p => {
+        const mySessions = completed.filter(s => s.player_ids.includes(p.id));
+        const wins = mySessions.filter(s => s.winner_ids?.includes(p.id)).length;
+        const gameCounts = mySessions.reduce((acc, s) => {
+          acc[s.game_name] = (acc[s.game_name] ?? 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+        const elo = eloRatings[p.id] ?? 1000;
+        return {
+          player: p,
+          sessions: mySessions.length,
+          wins,
+          winRate: mySessions.length > 0 ? Math.round((wins / mySessions.length) * 100) : 0,
+          topGame,
+          elo,
+        };
+      })
+      .filter(m => m.sessions > 0);
+
+    return {
+      byElo: [...metrics].sort((a, b) => b.elo - a.elo || b.wins - a.wins),
+      byWins: [...metrics].sort((a, b) => b.wins - a.wins || b.winRate - a.winRate),
+    };
+  }, [allSessions, players]);
+
+  const metrics = byElo;
 
   return (
     <div className="p-4 space-y-4">

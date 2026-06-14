@@ -1,9 +1,10 @@
+import { useSyncExternalStore } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Library, Play, Users, History } from 'lucide-react';
 import { sessionsStorage } from '../../lib/storage';
 
 export function BottomNav() {
-  const activeSession = sessionsStorage.getActive();
+  const activeSession = useSyncExternalStore(sessionsStorage.subscribe, sessionsStorage.getActive);
 
   const tabs = [
     { to: '/library', label: 'Librería', Icon: Library },

@@ -1,16 +1,18 @@
 import { useState, useRef } from 'react';
-import { settingsStorage, playersStorage, sessionsStorage, installedGamesStorage } from '../lib/storage';
+import { playersStorage, sessionsStorage, installedGamesStorage } from '../lib/storage';
 import { applyTheme } from '../lib/theme';
+import { validateBackup, type BackupData } from '../lib/backup';
+import { useSettings } from '../hooks/useSettings';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
 import type { AppSettings } from '../lib/types';
 
 export function SettingsPage() {
-  const [settings, setSettings] = useState(() => settingsStorage.get());
+  const { settings, update } = useSettings();
   const [exported, setExported] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const [pendingImport, setPendingImport] = useState<object | null>(null);
+  const [pendingImport, setPendingImport] = useState<BackupData | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -20,41 +22,33 @@ export function SettingsPage() {
     e.target.value = '';
     const reader = new FileReader();
     reader.onload = ev => {
-      try {
-        const data = JSON.parse(ev.target?.result as string);
-        if (!data.version || !data.players || !data.sessions) {
-          setImportError('El archivo no es un backup válido de GameCounter.');
-          return;
-        }
-        setPendingImport(data);
-      } catch {
-        setImportError('No se pudo leer el archivo.');
+      const result = validateBackup(ev.target?.result as string);
+      if (!result.ok) {
+        setImportError(result.error);
+        return;
       }
+      setPendingImport(result.data);
     };
     reader.readAsText(file);
   };
 
-  const applyImport = (data: any) => {
-    if (data.players) playersStorage.save(data.players);
-    if (data.sessions) sessionsStorage.save(data.sessions);
+  const applyImport = (data: BackupData) => {
+    playersStorage.save(data.players);
+    sessionsStorage.save(data.sessions);
     if (data.installed_games) installedGamesStorage.save(data.installed_games);
     if (data.settings) {
-      settingsStorage.update(data.settings);
+      update(data.settings);
       applyTheme(data.settings.theme ?? 'system');
-      setSettings(settingsStorage.get());
     }
     setPendingImport(null);
   };
 
   const updateTheme = (theme: AppSettings['theme']) => {
-    settingsStorage.update({ theme });
-    applyTheme(theme);
-    setSettings(s => ({ ...s, theme }));
+    update({ theme });
   };
 
   const updateShowTotals = (show_running_totals: boolean) => {
-    settingsStorage.update({ show_running_totals });
-    setSettings(s => ({ ...s, show_running_totals }));
+    update({ show_running_totals });
   };
 
   const handleExport = () => {
@@ -64,7 +58,7 @@ export function SettingsPage() {
       players: playersStorage.getAll(),
       sessions: sessionsStorage.getAll(),
       installed_games: installedGamesStorage.getAll(),
-      settings: settingsStorage.get(),
+      settings,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -183,7 +177,7 @@ export function SettingsPage() {
         confirmLabel="Restaurar"
         cancelLabel="Cancelar"
         confirmVariant="danger"
-        onConfirm={() => applyImport(pendingImport)}
+        onConfirm={() => pendingImport && applyImport(pendingImport)}
         onCancel={() => setPendingImport(null)}
       />
 

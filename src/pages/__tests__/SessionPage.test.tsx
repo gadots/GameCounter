@@ -77,7 +77,6 @@ describe('SessionPage — modal de salida', () => {
       session: activeSession,
       submitRound: mockSubmitRound,
       endSession: mockEndSession,
-      refresh: vi.fn(),
       createSession: vi.fn(),
       undoLastRound: vi.fn(),
     });
@@ -128,7 +127,6 @@ describe('SessionPage — estados de sesión', () => {
       session: null,
       submitRound: vi.fn(),
       endSession: vi.fn(),
-      refresh: vi.fn(),
       createSession: vi.fn(),
       undoLastRound: vi.fn(),
     });
@@ -141,7 +139,6 @@ describe('SessionPage — estados de sesión', () => {
       session: completedSession,
       submitRound: vi.fn(),
       endSession: vi.fn(),
-      refresh: vi.fn(),
       createSession: vi.fn(),
       undoLastRound: vi.fn(),
     });
@@ -156,7 +153,6 @@ describe('SessionPage — estados de sesión', () => {
       session: completedSession,
       submitRound: vi.fn(),
       endSession: vi.fn(),
-      refresh: vi.fn(),
       createSession: vi.fn(),
       undoLastRound: vi.fn(),
     });
@@ -170,7 +166,6 @@ describe('SessionPage — estados de sesión', () => {
       session: completedSession,
       submitRound: vi.fn(),
       endSession: vi.fn(),
-      refresh: vi.fn(),
       createSession: vi.fn(),
       undoLastRound: vi.fn(),
     });
@@ -184,7 +179,6 @@ describe('SessionPage — estados de sesión', () => {
       session: activeSession,
       submitRound: mockSubmitRound,
       endSession: mockEndSession,
-      refresh: vi.fn(),
       createSession: vi.fn(),
       undoLastRound: vi.fn(),
     });

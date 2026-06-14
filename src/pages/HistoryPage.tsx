@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { sessionsStorage, playersStorage } from '../lib/storage';
+import { usePlayers } from '../hooks/usePlayers';
+import { useSessions } from '../hooks/useSession';
 import { resolvePlayerName } from '../lib/sessionEngine';
 import { HistoryFilters, type FilterState } from '../components/HistoryFilters';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -23,28 +24,32 @@ export function HistoryPage() {
     period: '',
   });
 
-  const allSessions = sessionsStorage.getAll().filter(s => s.status === 'completed');
-  const players = playersStorage.getAll();
-  const gameNames = [...new Set(allSessions.map(s => s.game_name))].sort();
+  const sessions = useSessions();
+  const { players } = usePlayers();
 
-  const periodStart = (() => {
-    const d = new Date();
-    if (filters.period === 'week') { d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0); return d; }
-    if (filters.period === 'month') { d.setDate(1); d.setHours(0, 0, 0, 0); return d; }
-    if (filters.period === 'year') { d.setMonth(0, 1); d.setHours(0, 0, 0, 0); return d; }
-    return null;
-  })();
+  const allSessions = useMemo(() => sessions.filter(s => s.status === 'completed'), [sessions]);
+  const gameNames = useMemo(() => [...new Set(allSessions.map(s => s.game_name))].sort(), [allSessions]);
 
-  const filtered = allSessions
-    .filter(s => !filters.player || s.player_ids.includes(filters.player))
-    .filter(s => !filters.game || s.game_name === filters.game)
-    .filter(s => !periodStart || new Date(s.completed_at ?? s.started_at) >= periodStart)
-    .sort((a, b) => {
-      const diff =
-        new Date(b.completed_at ?? b.started_at).getTime() -
-        new Date(a.completed_at ?? a.started_at).getTime();
-      return filters.sort === 'desc' ? diff : -diff;
-    });
+  const filtered = useMemo(() => {
+    const periodStart = (() => {
+      const d = new Date();
+      if (filters.period === 'week') { d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0); return d; }
+      if (filters.period === 'month') { d.setDate(1); d.setHours(0, 0, 0, 0); return d; }
+      if (filters.period === 'year') { d.setMonth(0, 1); d.setHours(0, 0, 0, 0); return d; }
+      return null;
+    })();
+
+    return allSessions
+      .filter(s => !filters.player || s.player_ids.includes(filters.player))
+      .filter(s => !filters.game || s.game_name === filters.game)
+      .filter(s => !periodStart || new Date(s.completed_at ?? s.started_at) >= periodStart)
+      .sort((a, b) => {
+        const diff =
+          new Date(b.completed_at ?? b.started_at).getTime() -
+          new Date(a.completed_at ?? a.started_at).getTime();
+        return filters.sort === 'desc' ? diff : -diff;
+      });
+  }, [allSessions, filters]);
 
   return (
     <div className="p-4 space-y-4">

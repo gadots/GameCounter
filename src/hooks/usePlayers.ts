@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { playersStorage } from '../lib/storage';
 import type { Player } from '../lib/types';
 
@@ -10,13 +10,14 @@ const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444'
 const EMOJIS = ['🎲', '🏆', '⭐', '🎯', '🃏', '🎮', '🎪', '🎭'];
 
 export function usePlayers() {
-  const [players, setPlayers] = useState<Player[]>(() =>
-    playersStorage.getAll().sort((a, b) => a.name.localeCompare(b.name, 'es'))
-  );
+  const raw = useSyncExternalStore(playersStorage.subscribe, playersStorage.getAll);
 
-  const refresh = useCallback(() => {
-    setPlayers(playersStorage.getAll().sort((a, b) => a.name.localeCompare(b.name, 'es')));
-  }, []);
+  // raw is a stable reference until the players array mutates, so this sort
+  // only re-runs when the data actually changes.
+  const players = useMemo(
+    () => [...raw].sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    [raw],
+  );
 
   const addPlayer = useCallback((name: string) => {
     const all = playersStorage.getAll();
@@ -28,19 +29,16 @@ export function usePlayers() {
       created_at: new Date().toISOString(),
     };
     playersStorage.add(player);
-    refresh();
     return player;
-  }, [refresh]);
+  }, []);
 
   const updatePlayer = useCallback((id: string, patch: Partial<Pick<Player, 'name' | 'color' | 'avatar_emoji'>>) => {
     playersStorage.update(id, patch);
-    refresh();
-  }, [refresh]);
+  }, []);
 
   const removePlayer = useCallback((id: string) => {
     playersStorage.remove(id);
-    refresh();
-  }, [refresh]);
+  }, []);
 
   return { players, addPlayer, updatePlayer, removePlayer };
 }

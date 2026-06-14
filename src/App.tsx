@@ -1,22 +1,37 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { BottomNav } from './components/layout/BottomNav';
-import { HomePage } from './pages/HomePage';
-import { LibraryPage } from './pages/LibraryPage';
-import { NewSessionPage } from './pages/NewSessionPage';
-import { SessionPage } from './pages/SessionPage';
-import { PlayersPage } from './pages/PlayersPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { SessionSummaryPage } from './pages/SessionSummaryPage';
-import { PlayerDetailPage } from './pages/PlayerDetailPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { SharePage } from './pages/SharePage';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+
+// Pages are code-split so each route loads its own chunk. This keeps the
+// initial bundle small — heavy deps like dnd-kit (NewSessionPage) and supabase
+// (SessionPage / SharePage) are only fetched when those routes are visited.
+const HomePage = lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
+const LibraryPage = lazy(() => import('./pages/LibraryPage').then(m => ({ default: m.LibraryPage })));
+const NewSessionPage = lazy(() => import('./pages/NewSessionPage').then(m => ({ default: m.NewSessionPage })));
+const SessionPage = lazy(() => import('./pages/SessionPage').then(m => ({ default: m.SessionPage })));
+const PlayersPage = lazy(() => import('./pages/PlayersPage').then(m => ({ default: m.PlayersPage })));
+const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })));
+const SessionSummaryPage = lazy(() => import('./pages/SessionSummaryPage').then(m => ({ default: m.SessionSummaryPage })));
+const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage').then(m => ({ default: m.PlayerDetailPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const SharePage = lazy(() => import('./pages/SharePage').then(m => ({ default: m.SharePage })));
+
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <div className="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-gray-700 border-t-indigo-500 animate-spin" />
+    </div>
+  );
+}
 
 function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" style={{ paddingBottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
       <div className="max-w-lg mx-auto">
-        <Outlet />
+        <Suspense fallback={<PageFallback />}>
+          <Outlet />
+        </Suspense>
       </div>
       <BottomNav />
     </div>
@@ -24,7 +39,14 @@ function AppLayout() {
 }
 
 const router = createBrowserRouter([
-  { path: 'share/:id', element: <SharePage /> },
+  {
+    path: 'share/:id',
+    element: (
+      <Suspense fallback={<PageFallback />}>
+        <SharePage />
+      </Suspense>
+    ),
+  },
   {
     path: '/',
     element: <AppLayout />,

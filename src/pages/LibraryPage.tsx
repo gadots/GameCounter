@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
-import { sessionsStorage, playersStorage } from '../lib/storage';
+import { usePlayers } from '../hooks/usePlayers';
+import { useSessions } from '../hooks/useSession';
 import { computeGameRecords } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -16,8 +17,8 @@ export function LibraryPage() {
   const navigate = useNavigate();
 
   const allModules = getGameModules();
-  const allSessions = sessionsStorage.getAll();
-  const allPlayers = playersStorage.getAll();
+  const allSessions = useSessions();
+  const { players: allPlayers } = usePlayers();
   const matchesSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
   const countAll = allModules.filter(m => matchesSearch(m.metadata.name)).length;
   const countInstalled = allModules.filter(m => matchesSearch(m.metadata.name) && isInstalled(m.metadata.id)).length;
@@ -34,11 +35,14 @@ export function LibraryPage() {
       return bFav - aFav;
     });
 
-  const gameStats = allModules
-    .filter(m => isInstalled(m.metadata.id))
-    .map(m => ({ module: m, records: computeGameRecords(m.metadata.id, allSessions, allPlayers) }))
-    .filter(g => g.records.totalPlayed > 0)
-    .sort((a, b) => b.records.totalPlayed - a.records.totalPlayed);
+  const gameStats = useMemo(
+    () => allModules
+      .filter(m => isInstalled(m.metadata.id))
+      .map(m => ({ module: m, records: computeGameRecords(m.metadata.id, allSessions, allPlayers) }))
+      .filter(g => g.records.totalPlayed > 0)
+      .sort((a, b) => b.records.totalPlayed - a.records.totalPlayed),
+    [allModules, allSessions, allPlayers, isInstalled],
+  );
 
   return (
     <div className="p-4 space-y-4">

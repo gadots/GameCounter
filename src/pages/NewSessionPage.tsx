@@ -65,6 +65,7 @@ function SortablePlayerItem({ pid, index, players, animating }: SortableItemProp
       <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">{p?.name ?? pid}</span>
       <button
         className="touch-none text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 cursor-grab active:cursor-grabbing p-1 -mr-1"
+        aria-label={`Reordenar ${p?.name ?? 'jugador'}`}
         {...attributes}
         {...listeners}
         tabIndex={-1}
@@ -322,6 +323,7 @@ export function NewSessionPage() {
               <button
                 onClick={handleShuffle}
                 disabled={!!animating}
+                aria-label="Ordenar jugadores al azar"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 transition-opacity disabled:opacity-50"
               >
                 <span style={animating === 'dice' ? { display: 'inline-block', animation: 'dice-spin 0.65s ease-in-out' } : {}}>

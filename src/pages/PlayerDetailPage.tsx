@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { playersStorage, sessionsStorage } from '../lib/storage';
+import { sessionsStorage } from '../lib/storage';
 import { computeStreak, computeHeadToHead, computeGameStats, computeEloRatings, computeEloHistory } from '../lib/sessionEngine';
 import { usePlayers } from '../hooks/usePlayers';
+import { useSessions } from '../hooks/useSession';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -14,9 +15,10 @@ const EMOJIS = ['🎲', '🏆', '⭐', '🎯', '🃏', '🎮', '🎪', '🎭'];
 export function PlayerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { updatePlayer, removePlayer } = usePlayers();
+  const { players: allPlayers, updatePlayer, removePlayer } = usePlayers();
+  const allSessions = useSessions();
 
-  const player = id ? playersStorage.getAll().find(p => p.id === id) ?? null : null;
+  const player = id ? allPlayers.find(p => p.id === id) ?? null : null;
 
   const [name, setName] = useState(player?.name ?? '');
   const [color, setColor] = useState(player?.color ?? COLORS[0]);
@@ -24,52 +26,58 @@ export function PlayerDetailPage() {
   const [saved, setSaved] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  if (!player) {
+  // All derived stats are recomputed only when the player or sessions change,
+  // not on every render (color picker, name edits, modal toggles, etc.).
+  const stats = useMemo(() => {
+    if (!player) return null;
+    const played = allSessions.filter(s => s.status === 'completed' && s.player_ids.includes(player.id));
+    const won = played.filter(s => (s.winner_ids ?? []).includes(player.id)).length;
+    const winrate = played.length > 0 ? Math.round((won / played.length) * 100) : 0;
+    const streak = computeStreak(allSessions, player.id);
+
+    const gameCounts: Record<string, number> = {};
+    played.forEach(s => { gameCounts[s.game_name] = (gameCounts[s.game_name] ?? 0) + 1; });
+    const favGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+
+    const elo = played.length > 0 ? (computeEloRatings(allSessions)[player.id] ?? 1000) : null;
+    const eloHistory = computeEloHistory(player.id, allSessions);
+
+    const recentSessions = [...played]
+      .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())
+      .slice(0, 5);
+    const gameStats = computeGameStats(player.id, allSessions);
+    const h2h = computeHeadToHead(player.id, allSessions);
+
+    const nameSnapshot: Record<string, string> = {};
+    allSessions.forEach(s => Object.entries(s.player_name_snapshots ?? {}).forEach(([pid, n]) => {
+      if (!nameSnapshot[pid]) nameSnapshot[pid] = n;
+    }));
+
+    return { played, won, winrate, streak, favGame, elo, eloHistory, recentSessions, gameStats, h2h, nameSnapshot };
+  }, [player, allSessions]);
+
+  if (!player || !stats) {
     return <div className="p-4 text-gray-400">Jugador no encontrado.</div>;
   }
 
-  const allSessions = sessionsStorage.getAll();
-  const allPlayers = playersStorage.getAll();
-  const played = allSessions.filter(s => s.status === 'completed' && s.player_ids.includes(player.id));
-  const won = played.filter(s => (s.winner_ids ?? []).includes(player.id)).length;
-  const winrate = played.length > 0 ? Math.round((won / played.length) * 100) : 0;
-  const streak = computeStreak(allSessions, player.id);
+  const { played, won, winrate, streak, favGame, elo, eloHistory, recentSessions, gameStats, h2h, nameSnapshot } = stats;
 
-  const gameCounts: Record<string, number> = {};
-  played.forEach(s => { gameCounts[s.game_name] = (gameCounts[s.game_name] ?? 0) + 1; });
-  const favGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
-
-  const elo = played.length > 0 ? (computeEloRatings(allSessions)[player.id] ?? 1000) : null;
-  const eloHistory = computeEloHistory(player.id, allSessions);
-
-  const recentSessions = [...played]
-    .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())
-    .slice(0, 5);
-  const gameStats = computeGameStats(player.id, allSessions);
-  const h2h = computeHeadToHead(player.id, allSessions);
-
-  const nameSnapshot: Record<string, string> = {};
-  allSessions.forEach(s => Object.entries(s.player_name_snapshots ?? {}).forEach(([pid, n]) => {
-    if (!nameSnapshot[pid]) nameSnapshot[pid] = n;
-  }));
   const resolveOpponent = (pid: string) => allPlayers.find(p => p.id === pid)?.name ?? nameSnapshot[pid] ?? 'Desconocido';
   const opponentPlayer = (pid: string) => allPlayers.find(p => p.id === pid);
 
   const deleteDescription = (() => {
-    const activeSession = sessionsStorage.getActive();
+    const activeSession = allSessions.find(s => s.status === 'active') ?? null;
     if (activeSession?.player_ids.includes(player.id)) {
       return `Está en la partida activa de ${activeSession.game_name}. Esa partida quedará eliminada.`;
     }
-    const completedCount = sessionsStorage.getAll()
-      .filter(s => s.status === 'completed' && s.player_ids.includes(player.id)).length;
-    if (completedCount > 0) {
-      return `Participó en ${completedCount} partida${completedCount !== 1 ? 's' : ''}. El historial se conserva.`;
+    if (played.length > 0) {
+      return `Participó en ${played.length} partida${played.length !== 1 ? 's' : ''}. El historial se conserva.`;
     }
     return '¿Confirmar eliminación?';
   })();
 
   const handleConfirmDelete = () => {
-    const activeSession = sessionsStorage.getActive();
+    const activeSession = allSessions.find(s => s.status === 'active') ?? null;
     if (activeSession?.player_ids.includes(player.id)) {
       sessionsStorage.update(activeSession.id, { status: 'abandoned' });
     }
