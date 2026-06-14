@@ -22,7 +22,8 @@ import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSession } from '../hooks/useSession';
-import { sessionsStorage } from '../lib/storage';
+import { sessionsStorage, playersStorage } from '../lib/storage';
+import { resolvePlayerName } from '../lib/sessionEngine';
 import type { Player } from '../lib/types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -192,6 +193,41 @@ export function NewSessionPage() {
     <>
       <div className="p-4 space-y-6">
         <PageHeader title="Nueva partida" />
+
+        {!selectedGame && (() => {
+          const allPlayers = playersStorage.getAll();
+          const last = sessionsStorage.getAll()
+            .filter(s => s.status === 'completed')
+            .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())[0] ?? null;
+          if (!last) return null;
+          const winnerId = last.winner_ids?.[0];
+          const winnerPlayer = winnerId ? allPlayers.find(p => p.id === winnerId) : null;
+          const winnerColor = winnerPlayer?.color ?? '#6366f1';
+          const winnerName = winnerId ? resolvePlayerName(winnerId, allPlayers, last) : null;
+          return (
+            <section>
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Última partida</h2>
+              <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+                <div className="h-1 w-full" style={{ backgroundColor: winnerColor }} />
+                <div className="flex items-center gap-3 p-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{last.game_name}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {new Date(last.completed_at ?? last.started_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                      {winnerName && ` · 🏆 ${winnerName}`}
+                    </p>
+                  </div>
+                  <button
+                    className="shrink-0 px-3 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white active:bg-indigo-700"
+                    onClick={() => navigate(`/session/new?game=${last.game_id}&players=${last.player_ids.join(',')}`)}
+                  >
+                    Revancha
+                  </button>
+                </div>
+              </div>
+            </section>
+          );
+        })()}
 
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Juego</h2>
