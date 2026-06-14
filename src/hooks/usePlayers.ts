@@ -10,9 +10,13 @@ const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444'
 const EMOJIS = ['🎲', '🏆', '⭐', '🎯', '🃏', '🎮', '🎪', '🎭'];
 
 export function usePlayers() {
-  const [players, setPlayers] = useState<Player[]>(() => playersStorage.getAll());
+  const [players, setPlayers] = useState<Player[]>(() =>
+    playersStorage.getAll().sort((a, b) => a.name.localeCompare(b.name, 'es'))
+  );
 
-  const refresh = useCallback(() => setPlayers(playersStorage.getAll()), []);
+  const refresh = useCallback(() => {
+    setPlayers(playersStorage.getAll().sort((a, b) => a.name.localeCompare(b.name, 'es')));
+  }, []);
 
   const addPlayer = useCallback((name: string) => {
     const all = playersStorage.getAll();
