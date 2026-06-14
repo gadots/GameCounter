@@ -29,15 +29,6 @@ export function HomePage() {
   const distinctGames = new Set(completed.map(s => s.game_id)).size;
   const hasData = totalSessions > 0 || players.length > 0;
 
-  const leaderboard = players
-    .map(p => ({
-      player: p,
-      wins: completed.filter(s => s.winner_ids?.includes(p.id)).length,
-      sessions: completed.filter(s => s.player_ids.includes(p.id)).length,
-    }))
-    .filter(x => x.sessions > 0)
-    .sort((a, b) => b.wins - a.wins || b.sessions - a.sessions);
-
   return (
     <div className="p-4 space-y-5">
       {/* Header */}
@@ -115,41 +106,6 @@ export function HomePage() {
         </section>
       )}
 
-      {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <section>
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Clasificación</h2>
-          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
-            {leaderboard.slice(0, 5).map((entry, i) => {
-              const { player, wins, sessions } = entry;
-              const winRate = sessions > 0 ? Math.round((wins / sessions) * 100) : 0;
-              return (
-                <div
-                  key={player.id}
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
-                  onClick={() => navigate(`/players/${player.id}`)}
-                >
-                  <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
-                    style={{ backgroundColor: player.color + '33' }}
-                  >
-                    {player.avatar_emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{player.name}</p>
-                    <p className="text-xs text-gray-400">{sessions} {sessions === 1 ? 'partida' : 'partidas'}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{wins}</p>
-                    <p className="text-xs text-gray-400">{winRate}% vic.</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* Library shortcut — solo cuando hay data (si no hay nada el empty state ya tiene el CTA) */}
       {hasData && (
