@@ -6,6 +6,7 @@ import { usePlayers } from '../hooks/usePlayers';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/layout/PageHeader';
 
 const COLORS = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#14b8a6'];
 const EMOJIS = ['🎲', '🏆', '⭐', '🎯', '🃏', '🎮', '🎪', '🎭'];
@@ -83,9 +84,7 @@ export function PlayerDetailPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <button onClick={() => navigate('/players')} className="text-sm text-indigo-500 flex items-center gap-1">
-        ← Jugadores
-      </button>
+      <PageHeader title={player.name} backPath="/players" />
 
       <Card className="space-y-4">
         <div className="flex items-center gap-3">

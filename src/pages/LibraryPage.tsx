@@ -5,6 +5,7 @@ import { useInstalledGames } from '../hooks/useInstalledGames';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Star } from 'lucide-react';
+import { PageHeader } from '../components/layout/PageHeader';
 
 export function LibraryPage() {
   const [search, setSearch] = useState('');
@@ -31,7 +32,7 @@ export function LibraryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Librería de juegos</h1>
+      <PageHeader title="Librería de juegos" backPath="/home" />
 
       <input
         type="search"

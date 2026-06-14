@@ -27,6 +27,7 @@ import type { Player } from '../lib/types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/layout/PageHeader';
 
 interface SortableItemProps {
   pid: string;
@@ -154,7 +155,7 @@ export function NewSessionPage() {
 
     return (
       <div className="p-4 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Jugar</h1>
+        <PageHeader title="Jugar" />
 
         <Card className="border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20">
           <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Partida en curso</p>
@@ -190,7 +191,7 @@ export function NewSessionPage() {
   return (
     <>
       <div className="p-4 space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Nueva partida</h1>
+        <PageHeader title="Nueva partida" />
 
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Juego</h2>

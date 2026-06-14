@@ -1,13 +1,12 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { settingsStorage, playersStorage, sessionsStorage, installedGamesStorage } from '../lib/storage';
 import { applyTheme } from '../lib/theme';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/layout/PageHeader';
 import type { AppSettings } from '../lib/types';
 
 export function SettingsPage() {
-  const navigate = useNavigate();
   const [settings, setSettings] = useState(() => settingsStorage.get());
   const [exported, setExported] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -79,11 +78,7 @@ export function SettingsPage() {
 
   return (
     <div className="p-4 space-y-6">
-      <button onClick={() => navigate(-1)} className="text-sm text-indigo-500 flex items-center gap-1">
-        ← Volver
-      </button>
-
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Configuración</h1>
+      <PageHeader title="Configuración" backPath="/home" showSettings={false} />
 
       <Card>
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Tema</p>

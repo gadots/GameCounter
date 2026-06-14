@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { Library, ChevronRight, Settings } from 'lucide-react';
+import { Library, ChevronRight } from 'lucide-react';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { resolvePlayerName } from '../lib/sessionEngine';
-import { Button } from '../components/ui/Button';
+import { PageHeader } from '../components/layout/PageHeader';
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -25,11 +25,10 @@ export function HomePage() {
     ? new Date(lastSession.completed_at ?? lastSession.started_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })
     : null;
 
-  // Stats
   const totalSessions = completed.length;
   const distinctGames = new Set(completed.map(s => s.game_id)).size;
+  const hasData = totalSessions > 0 || players.length > 0;
 
-  // Leaderboard: wins + sessions per player
   const leaderboard = players
     .map(p => ({
       player: p,
@@ -40,25 +39,31 @@ export function HomePage() {
     .sort((a, b) => b.wins - a.wins || b.sessions - a.sessions);
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between pt-1">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GameCounter</h1>
-          {totalSessions > 0 && (
-            <p className="text-sm text-gray-400 mt-0.5">
-              {totalSessions} {totalSessions === 1 ? 'partida' : 'partidas'} · {distinctGames} {distinctGames === 1 ? 'juego' : 'juegos'}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={() => navigate('/settings')}
-          className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700"
-          aria-label="Ajustes"
-        >
-          <Settings size={20} />
-        </button>
+      <div>
+        <PageHeader title="GameCounter" />
+        {totalSessions > 0 && (
+          <p className="text-sm text-gray-400 mt-1 pl-1">
+            {totalSessions} {totalSessions === 1 ? 'partida' : 'partidas'} · {distinctGames} {distinctGames === 1 ? 'juego' : 'juegos'}
+          </p>
+        )}
       </div>
+
+      {/* Empty state — solo cuando no hay nada */}
+      {!hasData && (
+        <div className="text-center py-10">
+          <p className="text-5xl mb-3">🎲</p>
+          <p className="font-semibold text-gray-700 dark:text-gray-200">¡Bienvenido!</p>
+          <p className="text-sm text-gray-400 mt-1">Instalá un juego y sumá jugadores para empezar.</p>
+          <button
+            onClick={() => navigate('/library')}
+            className="mt-4 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold active:bg-indigo-700"
+          >
+            Ver librería
+          </button>
+        </div>
+      )}
 
       {/* Active session banner */}
       {activeSession && (
@@ -146,27 +151,19 @@ export function HomePage() {
         </section>
       )}
 
-      {/* Library shortcut */}
-      <section>
-        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Juegos</h2>
-        <button
-          className="w-full rounded-2xl bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center gap-3 text-left active:opacity-80"
-          onClick={() => navigate('/library')}
-        >
-          <Library size={20} className="text-indigo-500 shrink-0" />
-          <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">Librería de juegos</span>
-          <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
-        </button>
-      </section>
-
-      {/* Empty state */}
-      {totalSessions === 0 && players.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-5xl mb-3">🎲</p>
-          <p className="font-semibold text-gray-700 dark:text-gray-200">¡Bienvenido!</p>
-          <p className="text-sm text-gray-400 mt-1 mb-4">Instalá un juego y sumá jugadores para empezar.</p>
-          <Button onClick={() => navigate('/library')}>Ver librería</Button>
-        </div>
+      {/* Library shortcut — solo cuando hay data (si no hay nada el empty state ya tiene el CTA) */}
+      {hasData && (
+        <section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Juegos</h2>
+          <button
+            className="w-full rounded-2xl bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center gap-3 text-left active:opacity-80"
+            onClick={() => navigate('/library')}
+          >
+            <Library size={20} className="text-indigo-500 shrink-0" />
+            <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">Librería de juegos</span>
+            <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
+          </button>
+        </section>
       )}
     </div>
   );

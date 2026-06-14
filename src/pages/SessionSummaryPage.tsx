@@ -6,6 +6,7 @@ import { computePlayerTotals, withWinners, resolvePlayerName } from '../lib/sess
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { PageHeader } from '../components/layout/PageHeader';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -45,16 +46,10 @@ export function SessionSummaryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <button onClick={() => navigate('/history')} className="text-sm text-indigo-500 flex items-center gap-1">
-        ← Volver al historial
-      </button>
-
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{session.game_name}</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
-        </p>
-      </div>
+      <PageHeader title={session.game_name} backPath="/history" />
+      <p className="text-sm text-gray-400 -mt-4">
+        {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+      </p>
 
       <Card>
         <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Resultado final</p>

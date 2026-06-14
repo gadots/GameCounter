@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { resolvePlayerName } from '../lib/sessionEngine';
 import { HistoryFilters, type FilterState } from '../components/HistoryFilters';
+import { PageHeader } from '../components/layout/PageHeader';
 import type { Session, Player } from '../lib/types';
 
 function winnerColor(session: Session, players: Player[]): string {
@@ -37,7 +38,7 @@ export function HistoryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Historial</h1>
+      <PageHeader title="Historial" />
 
       <HistoryFilters
         players={players}
