@@ -55,7 +55,6 @@ export function HistoryPage() {
         {filtered.map(session => {
           const color = winnerColor(session, players);
           const winners = session.winner_ids ?? [];
-          const isTie = winners.length > 1;
           const date = new Date(session.completed_at ?? session.started_at);
           const totalRounds = Math.max(...session.scores.map(s => s.round), 0);
 
@@ -67,31 +66,37 @@ export function HistoryPage() {
             >
               <div className="h-1 w-full" style={{ backgroundColor: color }} />
               <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{session.game_name}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {totalRounds > 1 && ` · ${totalRounds} rondas`}
-                    </p>
-                  </div>
-                  {isTie && <span className="text-sm shrink-0">🤝</span>}
-                </div>
-                <div className="flex items-center gap-1.5 mt-3">
+                {/* Header row */}
+                <p className="font-semibold text-gray-900 dark:text-gray-100">{session.game_name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {totalRounds > 1 && ` · ${totalRounds} rondas`}
+                </p>
+
+                {/* Player chips */}
+                <div className="flex flex-wrap gap-1.5 mt-3">
                   {session.player_ids.map(pid => {
                     const p = players.find(pl => pl.id === pid);
+                    const pColor = p?.color ?? '#6366f1';
                     const isWinner = winners.includes(pid);
+                    const name = resolvePlayerName(pid, players, session);
                     return (
                       <div
                         key={pid}
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all ${isWinner ? 'ring-2' : ''}`}
-                        style={{
-                          backgroundColor: (p?.color ?? '#6366f1') + '44',
-                          boxShadow: isWinner ? `0 0 0 2px ${color}` : undefined,
-                        }}
-                        title={resolvePlayerName(pid, players, session)}
+                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                          isWinner
+                            ? ''
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                        }`}
+                        style={isWinner ? {
+                          backgroundColor: pColor + '30',
+                          color: pColor,
+                          boxShadow: `inset 0 0 0 1px ${pColor}55`,
+                        } : {}}
                       >
-                        {p?.avatar_emoji ?? '🎲'}
+                        <span className="text-sm leading-none">{p?.avatar_emoji ?? '🎲'}</span>
+                        <span className="max-w-[72px] truncate">{name}</span>
+                        {isWinner && <span className="text-xs leading-none">🏆</span>}
                       </div>
                     );
                   })}
