@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayers } from '../hooks/usePlayers';
 import { sessionsStorage } from '../lib/storage';
+import { computeEloRatings } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -19,7 +20,9 @@ export function PlayersPage() {
     setName('');
   };
 
-  const completed = sessionsStorage.getAll().filter(s => s.status === 'completed');
+  const allSessions = sessionsStorage.getAll();
+  const completed = allSessions.filter(s => s.status === 'completed');
+  const eloRatings = computeEloRatings(allSessions);
 
   const metrics = players
     .map(p => {
@@ -30,16 +33,18 @@ export function PlayersPage() {
         return acc;
       }, {} as Record<string, number>);
       const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+      const elo = eloRatings[p.id] ?? 1000;
       return {
         player: p,
         sessions: mySessions.length,
         wins,
         winRate: mySessions.length > 0 ? Math.round((wins / mySessions.length) * 100) : 0,
         topGame,
+        elo,
       };
     })
     .filter(m => m.sessions > 0)
-    .sort((a, b) => b.wins - a.wins || b.sessions - a.sessions);
+    .sort((a, b) => b.elo - a.elo || b.wins - a.wins);
 
   return (
     <div className="p-4 space-y-4">
@@ -134,8 +139,16 @@ export function PlayersPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.wins} vic.</p>
-                    <p className="text-xs text-gray-400">{m.winRate}% ganadas</p>
+                    <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.elo}</p>
+                    <p className={`text-xs font-medium ${
+                      m.elo > 1000
+                        ? 'text-emerald-500 dark:text-emerald-400'
+                        : m.elo < 1000
+                        ? 'text-red-400'
+                        : 'text-gray-400'
+                    }`}>
+                      {m.elo > 1000 ? `+${m.elo - 1000}` : m.elo < 1000 ? `${m.elo - 1000}` : '±0'}
+                    </p>
                   </div>
                 </div>
               ))}

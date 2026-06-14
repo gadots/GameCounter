@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { playersStorage, sessionsStorage } from '../lib/storage';
-import { computeStreak, computeHeadToHead, computeGameStats } from '../lib/sessionEngine';
+import { computeStreak, computeHeadToHead, computeGameStats, computeEloRatings } from '../lib/sessionEngine';
 import { usePlayers } from '../hooks/usePlayers';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -38,6 +38,8 @@ export function PlayerDetailPage() {
   const gameCounts: Record<string, number> = {};
   played.forEach(s => { gameCounts[s.game_name] = (gameCounts[s.game_name] ?? 0) + 1; });
   const favGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—';
+
+  const elo = played.length > 0 ? (computeEloRatings(allSessions)[player.id] ?? 1000) : null;
 
   const recentSessions = [...played]
     .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime())
@@ -137,6 +139,23 @@ export function PlayerDetailPage() {
 
       <Card>
         <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Estadísticas</p>
+        {elo !== null && (
+          <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100 dark:border-gray-700">
+            <div>
+              <p className="text-xs text-gray-400">Rating ELO</p>
+              <p className="score-num text-3xl font-bold text-gray-900 dark:text-white mt-0.5">{elo}</p>
+            </div>
+            <div className={`text-sm font-semibold px-2.5 py-1 rounded-full ${
+              elo > 1000
+                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                : elo < 1000
+                ? 'bg-red-100 dark:bg-red-900/30 text-red-500 dark:text-red-400'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-400'
+            }`}>
+              {elo > 1000 ? `+${elo - 1000}` : elo < 1000 ? `${elo - 1000}` : '±0'}
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <StatBox label="Partidas" value={played.length} />
           <StatBox label="Ganadas" value={won} />
