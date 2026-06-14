@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
 import { BottomNav } from './components/layout/BottomNav';
+import { HomePage } from './pages/HomePage';
 import { LibraryPage } from './pages/LibraryPage';
 import { NewSessionPage } from './pages/NewSessionPage';
 import { SessionPage } from './pages/SessionPage';
@@ -28,7 +29,8 @@ const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/library" replace /> },
+      { index: true, element: <Navigate to="/home" replace /> },
+      { path: 'home', element: <HomePage /> },
       { path: 'library', element: <LibraryPage /> },
       { path: 'session/new', element: <NewSessionPage /> },
       { path: 'session/:id', element: <SessionPage /> },

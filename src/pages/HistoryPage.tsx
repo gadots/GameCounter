@@ -55,10 +55,6 @@ export function HistoryPage() {
           const color = winnerColor(session, players);
           const winners = session.winner_ids ?? [];
           const isTie = winners.length > 1;
-          const primaryWinnerId = winners[0];
-          const primaryWinner = primaryWinnerId
-            ? { name: resolvePlayerName(primaryWinnerId, players, session), player: players.find(p => p.id === primaryWinnerId) }
-            : null;
           const date = new Date(session.completed_at ?? session.started_at);
           const totalRounds = Math.max(...session.scores.map(s => s.round), 0);
 
@@ -78,22 +74,7 @@ export function HistoryPage() {
                       {totalRounds > 1 && ` · ${totalRounds} rondas`}
                     </p>
                   </div>
-                  {primaryWinner && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {isTie
-                        ? <span className="text-sm">🤝</span>
-                        : <span className="text-sm">🏆</span>}
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-xs shrink-0"
-                        style={{ backgroundColor: (primaryWinner.player?.color ?? '#6366f1') + '33' }}
-                      >
-                        {primaryWinner.player?.avatar_emoji ?? '🎲'}
-                      </div>
-                      <span className="text-sm font-semibold text-gray-800 dark:text-gray-100 max-w-[80px] truncate">
-                        {primaryWinner.name}
-                      </span>
-                    </div>
-                  )}
+                  {isTie && <span className="text-sm shrink-0">🤝</span>}
                 </div>
                 <div className="flex items-center gap-1.5 mt-3">
                   {session.player_ids.map(pid => {

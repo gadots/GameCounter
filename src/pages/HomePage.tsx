@@ -1,0 +1,173 @@
+import { useNavigate } from 'react-router-dom';
+import { Library, ChevronRight, Settings } from 'lucide-react';
+import { sessionsStorage, playersStorage } from '../lib/storage';
+import { resolvePlayerName } from '../lib/sessionEngine';
+import { Button } from '../components/ui/Button';
+
+export function HomePage() {
+  const navigate = useNavigate();
+
+  const players = playersStorage.getAll();
+  const allSessions = sessionsStorage.getAll();
+  const activeSession = allSessions.find(s => s.status === 'active') ?? null;
+  const completed = allSessions
+    .filter(s => s.status === 'completed')
+    .sort((a, b) => new Date(b.completed_at ?? b.started_at).getTime() - new Date(a.completed_at ?? a.started_at).getTime());
+
+  const lastSession = completed[0] ?? null;
+  const lastWinnerId = lastSession?.winner_ids?.[0];
+  const lastWinnerPlayer = lastWinnerId ? players.find(p => p.id === lastWinnerId) : null;
+  const lastWinnerColor = lastWinnerPlayer?.color ?? '#6366f1';
+  const lastWinnerName = lastSession && lastWinnerId
+    ? resolvePlayerName(lastWinnerId, players, lastSession)
+    : null;
+  const lastDate = lastSession
+    ? new Date(lastSession.completed_at ?? lastSession.started_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })
+    : null;
+
+  // Stats
+  const totalSessions = completed.length;
+  const distinctGames = new Set(completed.map(s => s.game_id)).size;
+
+  // Leaderboard: wins + sessions per player
+  const leaderboard = players
+    .map(p => ({
+      player: p,
+      wins: completed.filter(s => s.winner_ids?.includes(p.id)).length,
+      sessions: completed.filter(s => s.player_ids.includes(p.id)).length,
+    }))
+    .filter(x => x.sessions > 0)
+    .sort((a, b) => b.wins - a.wins || b.sessions - a.sessions);
+
+  return (
+    <div className="p-4 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between pt-1">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GameCounter</h1>
+          {totalSessions > 0 && (
+            <p className="text-sm text-gray-400 mt-0.5">
+              {totalSessions} {totalSessions === 1 ? 'partida' : 'partidas'} · {distinctGames} {distinctGames === 1 ? 'juego' : 'juegos'}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={() => navigate('/settings')}
+          className="p-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 active:bg-gray-200 dark:active:bg-gray-700"
+          aria-label="Ajustes"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
+
+      {/* Active session banner */}
+      {activeSession && (
+        <div
+          className="rounded-2xl bg-indigo-600 text-white p-4 flex items-center gap-3 cursor-pointer active:opacity-90"
+          onClick={() => navigate(`/session/${activeSession.id}`)}
+        >
+          <div className="flex-1">
+            <p className="text-xs font-semibold opacity-70 uppercase tracking-wide">Partida en curso</p>
+            <p className="font-bold text-lg leading-tight mt-0.5">{activeSession.game_name}</p>
+            <p className="text-sm opacity-70 mt-0.5">
+              {activeSession.player_ids
+                .map(pid => players.find(p => p.id === pid)?.name ?? 'Jugador')
+                .join(', ')}
+            </p>
+          </div>
+          <div className="shrink-0 text-2xl">▶</div>
+        </div>
+      )}
+
+      {/* Last session */}
+      {lastSession && (
+        <section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Última partida</h2>
+          <div
+            className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden cursor-pointer active:opacity-90"
+            onClick={() => navigate(`/history/${lastSession.id}`)}
+          >
+            <div className="h-1 w-full" style={{ backgroundColor: lastWinnerColor }} />
+            <div className="flex items-center gap-3 p-4">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{lastSession.game_name}</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {lastDate}
+                  {lastWinnerName && ` · 🏆 ${lastWinnerName}`}
+                </p>
+              </div>
+              <button
+                className="shrink-0 px-3 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white active:bg-indigo-700"
+                onClick={e => {
+                  e.stopPropagation();
+                  navigate(`/session/new?game=${lastSession.game_id}&players=${lastSession.player_ids.join(',')}`);
+                }}
+              >
+                Revancha
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Leaderboard */}
+      {leaderboard.length > 0 && (
+        <section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Clasificación</h2>
+          <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
+            {leaderboard.slice(0, 5).map((entry, i) => {
+              const { player, wins, sessions } = entry;
+              const winRate = sessions > 0 ? Math.round((wins / sessions) * 100) : 0;
+              return (
+                <div
+                  key={player.id}
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
+                  onClick={() => navigate(`/players/${player.id}`)}
+                >
+                  <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
+                    style={{ backgroundColor: player.color + '33' }}
+                  >
+                    {player.avatar_emoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{player.name}</p>
+                    <p className="text-xs text-gray-400">{sessions} {sessions === 1 ? 'partida' : 'partidas'}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{wins}</p>
+                    <p className="text-xs text-gray-400">{winRate}% vic.</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Library shortcut */}
+      <section>
+        <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Juegos</h2>
+        <button
+          className="w-full rounded-2xl bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center gap-3 text-left active:opacity-80"
+          onClick={() => navigate('/library')}
+        >
+          <Library size={20} className="text-indigo-500 shrink-0" />
+          <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">Librería de juegos</span>
+          <ChevronRight size={16} className="text-gray-300 dark:text-gray-600" />
+        </button>
+      </section>
+
+      {/* Empty state */}
+      {totalSessions === 0 && players.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-5xl mb-3">🎲</p>
+          <p className="font-semibold text-gray-700 dark:text-gray-200">¡Bienvenido!</p>
+          <p className="text-sm text-gray-400 mt-1 mb-4">Instalá un juego y sumá jugadores para empezar.</p>
+          <Button onClick={() => navigate('/library')}>Ver librería</Button>
+        </div>
+      )}
+    </div>
+  );
+}

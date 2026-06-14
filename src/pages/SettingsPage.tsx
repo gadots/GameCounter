@@ -1,14 +1,50 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { settingsStorage, playersStorage, sessionsStorage, installedGamesStorage } from '../lib/storage';
 import { applyTheme } from '../lib/theme';
 import { Card } from '../components/ui/Card';
+import { Modal } from '../components/ui/Modal';
 import type { AppSettings } from '../lib/types';
 
 export function SettingsPage() {
   const navigate = useNavigate();
   const [settings, setSettings] = useState(() => settingsStorage.get());
   const [exported, setExported] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [pendingImport, setPendingImport] = useState<object | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (!data.version || !data.players || !data.sessions) {
+          setImportError('El archivo no es un backup válido de GameCounter.');
+          return;
+        }
+        setPendingImport(data);
+      } catch {
+        setImportError('No se pudo leer el archivo.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const applyImport = (data: any) => {
+    if (data.players) playersStorage.save(data.players);
+    if (data.sessions) sessionsStorage.save(data.sessions);
+    if (data.installed_games) installedGamesStorage.save(data.installed_games);
+    if (data.settings) {
+      settingsStorage.update(data.settings);
+      applyTheme(data.settings.theme ?? 'system');
+      setSettings(settingsStorage.get());
+    }
+    setPendingImport(null);
+  };
 
   const updateTheme = (theme: AppSettings['theme']) => {
     settingsStorage.update({ theme });
@@ -90,23 +126,55 @@ export function SettingsPage() {
       </Card>
 
       <Card>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Exportar datos</p>
-            <p className="text-xs text-gray-400 mt-0.5">Descargá un backup JSON de todas tus partidas y jugadores</p>
-          </div>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Datos</p>
+        <div className="flex gap-2">
           <button
             onClick={handleExport}
-            className={`shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
               exported
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
                 : 'bg-indigo-600 text-white active:bg-indigo-700'
             }`}
           >
-            {exported ? '✓ Listo' : 'Exportar'}
+            {exported ? '✓ Exportado' : 'Exportar JSON'}
           </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 active:bg-gray-200 dark:active:bg-gray-600"
+          >
+            Importar JSON
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleImportFile}
+          />
         </div>
+        <p className="text-xs text-gray-400 mt-2">Exportar descarga un backup · Importar restaura partidas y jugadores</p>
       </Card>
+
+      <Modal
+        open={pendingImport !== null}
+        title="¿Restaurar backup?"
+        description="Esto va a reemplazar todos tus datos actuales (jugadores, partidas, ajustes) con los del archivo. No se puede deshacer."
+        confirmLabel="Restaurar"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={() => applyImport(pendingImport)}
+        onCancel={() => setPendingImport(null)}
+      />
+
+      <Modal
+        open={importError !== null}
+        title="Error al importar"
+        description={importError ?? ''}
+        confirmLabel="Entendido"
+        cancelLabel="Cerrar"
+        onConfirm={() => setImportError(null)}
+        onCancel={() => setImportError(null)}
+      />
     </div>
   );
 }
