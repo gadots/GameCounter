@@ -21,18 +21,23 @@ export default {
     { id: 'maki', label: 'Makis', type: 'select',
       options: ['Sin puntos (0)', 'Segundo lugar (3 pts)', 'Primer lugar (6 pts)'],
       description: 'Quién tiene más makis al final de la ronda. Empate: se divide y redondea hacia abajo.' },
+    { id: 'pudding', label: 'Flanes (solo última ronda)', type: 'select',
+      options: ['Sin bonus (0)', 'Más flanes (+6 pts)', 'Menos flanes (−6 pts)'],
+      description: 'Llenar solo en la ronda 3. Más flanes acumulados: +6. Menos flanes: −6 (en partidas de ≥3 jugadores).' },
   ],
 
-  score({ tempura, sashimi, dumplings, nigiri, maki }) {
+  score({ tempura, sashimi, dumplings, nigiri, maki, pudding }) {
     const dumpVP = [0, 1, 3, 6, 10, 15];
     const makiVP = [0, 3, 6];
+    const puddingVP = [0, 6, -6];
     const d = Math.min(dumplings as number, 5);
     return (
       Math.floor((tempura as number) / 2) * 5 +
       Math.floor((sashimi as number) / 3) * 10 +
       dumpVP[d] +
       (nigiri as number) +
-      makiVP[maki as number]
+      makiVP[maki as number] +
+      puddingVP[pudding as number]
     );
   },
 } satisfies GameModule;
