@@ -11,6 +11,7 @@ export function SettingsPage() {
   const [exported, setExported] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<object | null>(null);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,7 +149,32 @@ export function SettingsPage() {
           />
         </div>
         <p className="text-xs text-gray-400 mt-2">Exportar descarga un backup · Importar restaura partidas y jugadores</p>
+
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <button
+            onClick={() => setShowDeleteAll(true)}
+            className="w-full py-2 rounded-lg text-sm font-medium text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/40 transition-colors"
+          >
+            Borrar todos los datos
+          </button>
+          <p className="text-xs text-gray-400 mt-1.5 text-center">Borra partidas y jugadores. No afecta la librería.</p>
+        </div>
       </Card>
+
+      <Modal
+        open={showDeleteAll}
+        title="¿Borrar todos los datos?"
+        description="Se van a eliminar todas las partidas y jugadores. Los juegos instalados no se tocan. Esta acción no se puede deshacer."
+        confirmLabel="Borrar todo"
+        cancelLabel="Cancelar"
+        confirmVariant="danger"
+        onConfirm={() => {
+          sessionsStorage.save([]);
+          playersStorage.save([]);
+          setShowDeleteAll(false);
+        }}
+        onCancel={() => setShowDeleteAll(false)}
+      />
 
       <Modal
         open={pendingImport !== null}
