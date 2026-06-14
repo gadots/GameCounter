@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   DndContext,
@@ -94,6 +94,16 @@ export function NewSessionPage() {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  useEffect(() => {
+    const game = searchParams.get('game');
+    const playerIds = searchParams.get('players')?.split(',').filter(Boolean) ?? [];
+    if (game) {
+      setSelectedGame(game);
+      setSelectedPlayers(playerIds);
+      setShuffled(false);
+    }
+  }, [searchParams]);
 
   const activeSession = sessionsStorage.getActive();
   const installedModules = getGameModules().filter(m => isInstalled(m.metadata.id));
