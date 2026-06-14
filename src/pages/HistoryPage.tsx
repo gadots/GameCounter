@@ -20,15 +20,25 @@ export function HistoryPage() {
     player: searchParams.get('player') ?? '',
     game: '',
     sort: 'desc',
+    period: '',
   });
 
   const allSessions = sessionsStorage.getAll().filter(s => s.status === 'completed');
   const players = playersStorage.getAll();
   const gameNames = [...new Set(allSessions.map(s => s.game_name))].sort();
 
+  const periodStart = (() => {
+    const d = new Date();
+    if (filters.period === 'week') { d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0); return d; }
+    if (filters.period === 'month') { d.setDate(1); d.setHours(0, 0, 0, 0); return d; }
+    if (filters.period === 'year') { d.setMonth(0, 1); d.setHours(0, 0, 0, 0); return d; }
+    return null;
+  })();
+
   const filtered = allSessions
     .filter(s => !filters.player || s.player_ids.includes(filters.player))
     .filter(s => !filters.game || s.game_name === filters.game)
+    .filter(s => !periodStart || new Date(s.completed_at ?? s.started_at) >= periodStart)
     .sort((a, b) => {
       const diff =
         new Date(b.completed_at ?? b.started_at).getTime() -

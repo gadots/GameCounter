@@ -2,12 +2,20 @@ import type { ReactNode } from 'react';
 import type { Player } from '../lib/types';
 
 export type SortOrder = 'desc' | 'asc';
+export type Period = '' | 'week' | 'month' | 'year';
 
 export interface FilterState {
   player: string;
   game: string;
   sort: SortOrder;
+  period: Period;
 }
+
+const PERIOD_LABELS: Record<string, string> = {
+  week: '7 días',
+  month: 'Este mes',
+  year: 'Este año',
+};
 
 interface Props {
   players: Player[];
@@ -91,6 +99,18 @@ export function HistoryFilters({ players, gameNames, value, onChange }: Props) {
           onClear={() => onChange({ ...value, player: '' })}
         >
           {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </FilterChip>
+
+        <FilterChip
+          label="Fecha"
+          activeLabel={PERIOD_LABELS[value.period] ?? ''}
+          value={value.period}
+          onChange={period => onChange({ ...value, period: period as Period })}
+          onClear={() => onChange({ ...value, period: '' })}
+        >
+          <option value="week">Últimos 7 días</option>
+          <option value="month">Este mes</option>
+          <option value="year">Este año</option>
         </FilterChip>
       </div>
 
