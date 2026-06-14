@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Settings, ChevronLeft } from 'lucide-react';
+import { Logo } from '../ui/Logo';
 
 interface PageHeaderProps {
   title: string;
@@ -10,17 +11,19 @@ interface PageHeaderProps {
 export function PageHeader({ title, backPath, showSettings = true }: PageHeaderProps) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-center gap-1 pt-1">
-      {backPath && (
+    <div className="flex items-center gap-2.5 pt-1">
+      {backPath ? (
         <button
           onClick={() => navigate(backPath)}
-          className="p-2 -ml-2 rounded-xl text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
+          className="p-1.5 -ml-1.5 rounded-xl text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
           aria-label="Volver"
         >
           <ChevronLeft size={22} />
         </button>
+      ) : (
+        <Logo size={30} />
       )}
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex-1 truncate">{title}</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white flex-1 truncate">{title}</h1>
       {showSettings && (
         <button
           onClick={() => navigate('/settings')}
