@@ -36,11 +36,18 @@ export interface RoundContext {
 
 export type InputValues = Record<string, number | boolean>;
 
+export interface FinalRound {
+  label?: string;
+  inputs: InputDef[];
+  score(values: InputValues): number;
+}
+
 export interface GameModule {
   metadata: GameMetadata;
   inputs: InputDef[];
   score(values: InputValues, ctx: RoundContext): number;
   validate?(values: InputValues): string | null;
+  final_round?: FinalRound;
 }
 
 // ─── App-level types ──────────────────────────────────────────────────────
@@ -75,6 +82,7 @@ export interface Session {
   winner_ids?: string[];
   player_name_snapshots?: Record<string, string>;
   notes?: string;
+  in_final_bonus?: boolean;
 }
 
 export interface InstalledGame {

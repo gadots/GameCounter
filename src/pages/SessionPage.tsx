@@ -18,7 +18,7 @@ import type { InputValues, Session, GameModule, Player } from '../lib/types';
 export function SessionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { session, submitRound, endSession, undoLastRound } = useSession(id ?? null);
+  const { session, submitRound, endSession, undoLastRound, enterFinalBonus } = useSession(id ?? null);
   const { players } = usePlayers();
   const { settings } = useSettings();
 
@@ -97,6 +97,10 @@ export function SessionPage() {
     );
   }
 
+  const isFinalBonus = session.in_final_bonus ?? false;
+  const activeInputs = isFinalBonus ? (module.final_round?.inputs ?? module.inputs) : module.inputs;
+  const finalBonusLabel = module.final_round?.label ?? 'Bonificación final';
+
   const currentPlayerId = session.player_ids[activePlayer];
   const currentPlayer = players.find(p => p.id === currentPlayerId);
   const currentValues = roundInputs[currentPlayerId] ?? {};
@@ -156,7 +160,9 @@ export function SessionPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{session.game_name}</h1>
-            {module.metadata.scoring_mode === 'per_round' && (
+            {isFinalBonus ? (
+              <p className="text-sm font-medium text-indigo-500 dark:text-indigo-400">{finalBonusLabel}</p>
+            ) : module.metadata.scoring_mode === 'per_round' && (
               <p className="text-sm text-gray-400">
                 Ronda {session.current_round}{module.metadata.total_rounds ? ` de ${module.metadata.total_rounds}` : ''}
               </p>
@@ -179,6 +185,11 @@ export function SessionPage() {
             {module.metadata.scoring_mode === 'end_of_game' && (
               <Button variant="ghost" size="sm" onClick={endSession}>
                 Terminar
+              </Button>
+            )}
+            {module.metadata.scoring_mode === 'per_round' && module.final_round && !module.metadata.total_rounds && !isFinalBonus && (
+              <Button variant="ghost" size="sm" onClick={enterFinalBonus}>
+                Ir a bonus final
               </Button>
             )}
           </div>
@@ -216,7 +227,7 @@ export function SessionPage() {
             <p className="font-semibold text-gray-800 dark:text-gray-100">{currentPlayer?.name ?? 'Jugador'}</p>
           </div>
           <InputRenderer
-            inputs={module.inputs}
+            inputs={activeInputs}
             values={currentValues}
             onChange={(id, val) => setValues({ ...currentValues, [id]: val })}
           />
@@ -225,11 +236,15 @@ export function SessionPage() {
 
         <Button className="w-full" size="lg" onClick={handleSubmit}>
           {isLastPlayer
-            ? (module.metadata.scoring_mode === 'end_of_game' ? 'Calcular ganador' : 'Registrar ronda')
+            ? (isFinalBonus || module.metadata.scoring_mode === 'end_of_game' ? 'Calcular ganador' : 'Registrar ronda')
             : `Siguiente: ${players.find(p => p.id === session.player_ids[activePlayer + 1])?.name ?? '...'}`}
         </Button>
 
-        {module.metadata.scoring_mode === 'per_round' && session.current_round > 1 && (
+        {isFinalBonus ? (
+          <Button variant="secondary" className="w-full" onClick={handleUndoRound}>
+            ← Cancelar bonificación
+          </Button>
+        ) : module.metadata.scoring_mode === 'per_round' && session.current_round > 1 && (
           <Button variant="secondary" className="w-full" onClick={handleUndoRound}>
             ← Editar ronda {session.current_round - 1}
           </Button>

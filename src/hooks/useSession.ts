@@ -64,28 +64,37 @@ export function useSession(sessionId: string | null) {
     const module = getGameModule(session.game_id);
     if (!module) return;
 
-    const ctx = {
-      round: session.current_round,
-      total_rounds: module.metadata.total_rounds,
-    };
+    const isFinalBonus = session.in_final_bonus ?? false;
+    const activeInputs = isFinalBonus ? module.final_round!.inputs : module.inputs;
+    const ctx = { round: session.current_round, total_rounds: module.metadata.total_rounds };
 
     // Merge player inputs with defaults so score() always receives numbers, never undefined
-    const defaults = getInputDefaults(module.inputs);
+    const defaults = getInputDefaults(activeInputs);
     const newScores: RoundScore[] = session.player_ids.map(player_id => {
       const values = { ...defaults, ...roundInputs[player_id] };
       return {
         player_id,
         round: session.current_round,
         raw_inputs: values,
-        computed_score: computeScore(module, values, ctx),
+        computed_score: isFinalBonus
+          ? module.final_round!.score(values)
+          : computeScore(module, values, ctx),
       };
     });
 
     const allScores = [...session.scores, ...newScores];
     const nextRound = session.current_round + 1;
+    const total = module.metadata.total_rounds;
+
+    // Done when: end_of_game mode, or just submitted the bonus round,
+    // or all rounds done and no final_round exists.
     const isDone =
       module.metadata.scoring_mode === 'end_of_game' ||
-      (module.metadata.total_rounds != null && nextRound > module.metadata.total_rounds);
+      isFinalBonus ||
+      (total != null && nextRound > total && !module.final_round);
+
+    // For fixed-round games: auto-enter bonus mode after the last regular round.
+    const enterBonus = !isDone && !isFinalBonus && total != null && nextRound > total && !!module.final_round;
 
     // Compute winners from allScores now (fresh data) instead of stale session state
     let winner_ids: string[] | undefined;
@@ -104,8 +113,15 @@ export function useSession(sessionId: string | null) {
       status: isDone ? 'completed' : 'active',
       completed_at: isDone ? new Date().toISOString() : undefined,
       winner_ids,
+      in_final_bonus: enterBonus || undefined,
     });
     return isDone;
+  }, [session]);
+
+  // Manually trigger the final bonus round for variable-round games.
+  const enterFinalBonus = useCallback(() => {
+    if (!session) return;
+    sessionsStorage.update(session.id, { in_final_bonus: true });
   }, [session]);
 
   // Used by the manual "Terminar" button in end_of_game mode.
@@ -129,8 +145,34 @@ export function useSession(sessionId: string | null) {
 
   // Removes the last submitted round from storage and returns its raw_inputs
   // so the UI can pre-fill the form for re-entry.
+  // When in bonus mode: exits bonus mode and (for fixed-round games) undoes the
+  // last regular round so the player can re-enter it.
   const undoLastRound = useCallback((): Record<string, InputValues> | null => {
-    if (!session || session.current_round <= 1) return null;
+    if (!session) return null;
+
+    if (session.in_final_bonus) {
+      const module = getGameModule(session.game_id);
+      const total = module?.metadata.total_rounds;
+      if (total != null) {
+        // Fixed-round game: undo last regular round so user can re-enter it.
+        const prevInputs: Record<string, InputValues> = {};
+        session.player_ids.forEach(pid => {
+          const score = session.scores.find(s => s.player_id === pid && s.round === total);
+          if (score) prevInputs[pid] = score.raw_inputs;
+        });
+        sessionsStorage.update(session.id, {
+          scores: session.scores.filter(s => s.round !== total),
+          current_round: total,
+          in_final_bonus: undefined,
+        });
+        return prevInputs;
+      }
+      // Variable-round game: just cancel bonus mode, nothing to undo.
+      sessionsStorage.update(session.id, { in_final_bonus: undefined });
+      return {};
+    }
+
+    if (session.current_round <= 1) return null;
     const prevRound = session.current_round - 1;
 
     const prevInputs: Record<string, InputValues> = {};
@@ -146,5 +188,5 @@ export function useSession(sessionId: string | null) {
     return prevInputs;
   }, [session]);
 
-  return { session, createSession, submitRound, endSession, undoLastRound };
+  return { session, createSession, submitRound, endSession, undoLastRound, enterFinalBonus };
 }

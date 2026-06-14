@@ -19,4 +19,14 @@ export default {
   score({ word_score }) {
     return word_score as number;
   },
+
+  final_round: {
+    label: 'Ajuste final de fichas',
+    inputs: [
+      { id: 'tile_adjustment', label: 'Ajuste de fichas', type: 'number', description: 'Ingresá negativo si te quedaron fichas (−valor total). Positivo si saliste primero y recibís la suma de las fichas ajenas.' },
+    ],
+    score({ tile_adjustment }) {
+      return tile_adjustment as number;
+    },
+  },
 } satisfies GameModule;

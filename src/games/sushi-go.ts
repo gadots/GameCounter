@@ -21,23 +21,30 @@ export default {
     { id: 'maki', label: 'Makis', type: 'select',
       options: ['Sin puntos (0)', 'Segundo lugar (3 pts)', 'Primer lugar (6 pts)'],
       description: 'Quién tiene más makis al final de la ronda. Empate: se divide y redondea hacia abajo.' },
-    { id: 'pudding', label: 'Flanes (solo última ronda)', type: 'select',
-      options: ['Sin bonus (0)', 'Más flanes (+6 pts)', 'Menos flanes (−6 pts)'],
-      description: 'Llenar solo en la ronda 3. Más flanes acumulados: +6. Menos flanes: −6 (en partidas de ≥3 jugadores).' },
   ],
 
-  score({ tempura, sashimi, dumplings, nigiri, maki, pudding }) {
+  score({ tempura, sashimi, dumplings, nigiri, maki }) {
     const dumpVP = [0, 1, 3, 6, 10, 15];
     const makiVP = [0, 3, 6];
-    const puddingVP = [0, 6, -6];
     const d = Math.min(dumplings as number, 5);
     return (
       Math.floor((tempura as number) / 2) * 5 +
       Math.floor((sashimi as number) / 3) * 10 +
       dumpVP[d] +
       (nigiri as number) +
-      makiVP[maki as number] +
-      puddingVP[pudding as number]
+      makiVP[maki as number]
     );
+  },
+
+  final_round: {
+    label: 'Bonificación de flanes',
+    inputs: [
+      { id: 'pudding', label: 'Flanes acumulados', type: 'select',
+        options: ['Sin bonus (0)', 'Menos flanes (−6 pts)', 'Más flanes (+6 pts)'],
+        description: 'Al final de las 3 rondas: quién tiene más flanes recibe +6; quién tiene menos, −6. Empate: se divide.' },
+    ],
+    score({ pudding }) {
+      return [0, -6, 6][pudding as number];
+    },
   },
 } satisfies GameModule;
