@@ -151,6 +151,54 @@ export function computeEloHistory(
   return history;
 }
 
+export function computeGameRecords(
+  gameId: string,
+  sessions: Session[],
+  players: Player[],
+): {
+  totalPlayed: number;
+  highScore: { value: number; playerName: string } | null;
+  topWinner: { playerName: string; wins: number } | null;
+} {
+  const completed = sessions.filter(s => s.status === 'completed' && s.game_id === gameId);
+  const totalPlayed = completed.length;
+  if (totalPlayed === 0) return { totalPlayed: 0, highScore: null, topWinner: null };
+
+  // High score: max grand_total across all players in all sessions
+  let highScore: { value: number; playerName: string } | null = null;
+  for (const s of completed) {
+    const totals: Record<string, number> = {};
+    for (const sc of s.scores) {
+      totals[sc.player_id] = (totals[sc.player_id] ?? 0) + sc.computed_score;
+    }
+    for (const [pid, value] of Object.entries(totals)) {
+      if (value > 0 && (highScore === null || value > highScore.value)) {
+        const name = players.find(p => p.id === pid)?.name
+          ?? s.player_name_snapshots?.[pid]
+          ?? 'Desconocido';
+        highScore = { value, playerName: name };
+      }
+    }
+  }
+
+  // Top winner by number of wins in this game
+  const winCounts: Record<string, number> = {};
+  for (const s of completed) {
+    for (const pid of s.winner_ids ?? []) {
+      winCounts[pid] = (winCounts[pid] ?? 0) + 1;
+    }
+  }
+  const topEntry = Object.entries(winCounts).sort((a, b) => b[1] - a[1])[0] ?? null;
+  const topWinner = topEntry
+    ? {
+        playerName: players.find(p => p.id === topEntry[0])?.name ?? 'Desconocido',
+        wins: topEntry[1],
+      }
+    : null;
+
+  return { totalPlayed, highScore, topWinner };
+}
+
 // Multiplayer ELO: pairwise comparisons, K=32 divided by (n-1) to normalize.
 // Winners beat non-winners (1-0), co-winners tie (0.5), non-winners tie (0.5).
 export function computeEloRatings(sessions: Session[]): Record<string, number> {

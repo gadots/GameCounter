@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
+import { sessionsStorage, playersStorage } from '../lib/storage';
+import { computeGameRecords } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Star } from 'lucide-react';
@@ -14,6 +16,8 @@ export function LibraryPage() {
   const navigate = useNavigate();
 
   const allModules = getGameModules();
+  const allSessions = sessionsStorage.getAll();
+  const allPlayers = playersStorage.getAll();
   const matchesSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
   const countAll = allModules.filter(m => matchesSearch(m.metadata.name)).length;
   const countInstalled = allModules.filter(m => matchesSearch(m.metadata.name) && isInstalled(m.metadata.id)).length;
@@ -73,6 +77,15 @@ export function LibraryPage() {
                   {m.metadata.min_players}–{m.metadata.max_players} jugadores
                   {m.metadata.scoring_mode === 'per_round' && ` · ${m.metadata.total_rounds} rondas`}
                 </p>
+                {(() => {
+                  if (!inst) return null;
+                  const rec = computeGameRecords(m.metadata.id, allSessions, allPlayers);
+                  if (rec.totalPlayed === 0) return null;
+                  const parts = [`${rec.totalPlayed} ${rec.totalPlayed === 1 ? 'partida' : 'partidas'}`];
+                  if (rec.highScore) parts.push(`Récord: ${rec.highScore.value} pts (${rec.highScore.playerName})`);
+                  else if (rec.topWinner) parts.push(`Más victorias: ${rec.topWinner.playerName} (${rec.topWinner.wins})`);
+                  return <p className="text-xs text-indigo-500 dark:text-indigo-400 mt-1 truncate">{parts.join(' · ')}</p>;
+                })()}
                 {m.metadata.tags && (
                   <div className="flex gap-1 mt-1.5 flex-wrap">
                     {m.metadata.tags.map(tag => (

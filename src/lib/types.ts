@@ -74,6 +74,7 @@ export interface Session {
   completed_at?: string;
   winner_ids?: string[];
   player_name_snapshots?: Record<string, string>;
+  notes?: string;
 }
 
 export interface InstalledGame {

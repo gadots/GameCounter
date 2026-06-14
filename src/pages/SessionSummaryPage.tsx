@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Share2 } from 'lucide-react';
+import { useRef } from 'react';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -33,10 +34,25 @@ export function SessionSummaryPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
+  const notesInitialized = useRef(false);
 
   const session = id ? sessionsStorage.getById(id) : null;
   const module = session ? getGameModule(session.game_id) : null;
   const players = playersStorage.getAll();
+
+  if (session && !notesInitialized.current) {
+    notesInitialized.current = true;
+    setNotes(session.notes ?? '');
+  }
+
+  const handleNotesSave = () => {
+    if (!session) return;
+    sessionsStorage.update(session.id, { notes });
+    setNotesSaved(true);
+    setTimeout(() => setNotesSaved(false), 2000);
+  };
 
   if (!session || !module) {
     return <div className="p-4 text-gray-400">Partida no encontrada.</div>;
@@ -44,6 +60,26 @@ export function SessionSummaryPage() {
 
   const totals = withWinners(computePlayerTotals(session, module));
   const date = new Date(session.completed_at ?? session.started_at);
+
+  // New record detection: compare current session's top score vs previous sessions
+  const prevSessions = sessionsStorage.getAll()
+    .filter(s => s.status === 'completed' && s.game_id === session.game_id && s.id !== session.id);
+  const currentTopScore = Math.max(...totals.map(t => t.grand_total), 0);
+  const prevTopScore = prevSessions.length > 0
+    ? Math.max(0, ...prevSessions.flatMap(s =>
+        Object.values(s.scores.reduce((acc, sc) => {
+          acc[sc.player_id] = (acc[sc.player_id] ?? 0) + sc.computed_score;
+          return acc;
+        }, {} as Record<string, number>))
+      ))
+    : null;
+  const isNewRecord = prevTopScore !== null && currentTopScore > prevTopScore && currentTopScore > 0;
+  const recordHolder = isNewRecord
+    ? totals.find(t => t.grand_total === currentTopScore)
+    : null;
+  const recordHolderName = recordHolder
+    ? resolvePlayerName(recordHolder.player_id, players, session)
+    : null;
 
   return (
     <div className="p-4 space-y-4">
@@ -116,6 +152,33 @@ export function SessionSummaryPage() {
       {module.metadata.tiebreaker_hint && (
         <p className="text-xs text-gray-400 italic text-center px-2">{module.metadata.tiebreaker_hint}</p>
       )}
+
+      {isNewRecord && recordHolderName && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50">
+          <span className="text-2xl">🏆</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">¡Nuevo récord!</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {recordHolderName} — {currentTopScore} pts en {session.game_name}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <Card>
+        <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Notas</p>
+        <textarea
+          value={notes}
+          onChange={e => setNotes(e.target.value)}
+          onBlur={handleNotesSave}
+          placeholder="Agregá notas, reglas usadas, quién jugó mejor..."
+          rows={3}
+          className="w-full text-sm bg-transparent text-gray-700 dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600 resize-none focus:outline-none"
+        />
+        {notesSaved && (
+          <p className="text-xs text-emerald-500 mt-1">✓ Guardado</p>
+        )}
+      </Card>
 
       <a
         href={`https://wa.me/?text=${encodeURIComponent(buildWhatsAppText(session, totals, players, date))}`}
