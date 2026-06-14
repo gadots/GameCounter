@@ -98,22 +98,47 @@ export function SessionPage() {
   }
 
   const isFinalBonus = session.in_final_bonus ?? false;
+  const isCooperative = module.metadata.cooperative ?? false;
   const activeInputs = isFinalBonus ? (module.final_round?.inputs ?? module.inputs) : module.inputs;
   const finalBonusLabel = module.final_round?.label ?? 'Bonificación final';
 
-  const currentPlayerId = session.player_ids[activePlayer];
+  // In cooperative mode all players share the same input slot (first player).
+  const currentPlayerId = isCooperative ? session.player_ids[0] : session.player_ids[activePlayer];
   const currentPlayer = players.find(p => p.id === currentPlayerId);
   const currentValues = roundInputs[currentPlayerId] ?? {};
 
   const setValues = (vals: InputValues) =>
     setRoundInputs(prev => ({ ...prev, [currentPlayerId]: vals }));
 
+  // Build a map of exclusive inputs already claimed by previous players this round.
+  const takenBy: Record<string, string> = {};
+  if (!isCooperative) {
+    activeInputs.forEach(inp => {
+      if (!inp.exclusive_group) return;
+      for (let i = 0; i < activePlayer; i++) {
+        const pid = session.player_ids[i];
+        if (roundInputs[pid]?.[inp.id]) {
+          takenBy[inp.id] = players.find(p => p.id === pid)?.name ?? 'otro jugador';
+          break;
+        }
+      }
+    });
+  }
+
   const handleSubmit = () => {
     if (module.validate) {
-      const err = module.validate(roundInputs[currentPlayerId] ?? {});
+      const err = module.validate(currentValues);
       if (err) { setError(err); return; }
     }
     setError(null);
+
+    if (isCooperative) {
+      // Same inputs applied to every player.
+      const allInputs = Object.fromEntries(session.player_ids.map(pid => [pid, currentValues]));
+      submitRound(allInputs);
+      setRoundInputs({});
+      return;
+    }
 
     if (activePlayer < session.player_ids.length - 1) {
       setActivePlayer(prev => prev + 1);
@@ -135,7 +160,7 @@ export function SessionPage() {
     }
   };
 
-  const isLastPlayer = activePlayer === session.player_ids.length - 1;
+  const isLastPlayer = isCooperative || activePlayer === session.player_ids.length - 1;
 
   const handleShare = async () => {
     const result = await startSharing(session);
@@ -200,41 +225,60 @@ export function SessionPage() {
           </div>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {session.player_ids.map((pid, i) => {
-            const p = players.find(pl => pl.id === pid);
-            const color = p?.color ?? '#6366f1';
-            const isActive = i === activePlayer;
-            return (
-              <button
-                key={pid}
-                onClick={() => setActivePlayer(i)}
-                style={isActive ? { backgroundColor: color } : {}}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-all ${
-                  isActive ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                }`}
-              >
-                <span>{p?.avatar_emoji ?? '🎲'}</span>
-                <span>{p?.name ?? pid}</span>
-                {roundInputs[pid] && (
-                  <span className={`text-xs ${isActive ? 'text-green-200' : 'text-green-500'}`}>✓</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {!isCooperative && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {session.player_ids.map((pid, i) => {
+              const p = players.find(pl => pl.id === pid);
+              const color = p?.color ?? '#6366f1';
+              const isActive = i === activePlayer;
+              return (
+                <button
+                  key={pid}
+                  onClick={() => setActivePlayer(i)}
+                  style={isActive ? { backgroundColor: color } : {}}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-all ${
+                    isActive ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                  }`}
+                >
+                  <span>{p?.avatar_emoji ?? '🎲'}</span>
+                  <span>{p?.name ?? pid}</span>
+                  {roundInputs[pid] && (
+                    <span className={`text-xs ${isActive ? 'text-green-200' : 'text-green-500'}`}>✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <Card>
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ backgroundColor: (currentPlayer?.color ?? '#6366f1') + '33' }}>
-              {currentPlayer?.avatar_emoji ?? '🎲'}
+          {isCooperative ? (
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex -space-x-2">
+                {session.player_ids.slice(0, 4).map(pid => {
+                  const p = players.find(pl => pl.id === pid);
+                  return (
+                    <div key={pid} className="w-7 h-7 rounded-full flex items-center justify-center text-sm border-2 border-white dark:border-gray-800" style={{ backgroundColor: (p?.color ?? '#6366f1') + '44' }}>
+                      {p?.avatar_emoji ?? '🎲'}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="font-semibold text-gray-800 dark:text-gray-100">Todos los jugadores</p>
             </div>
-            <p className="font-semibold text-gray-800 dark:text-gray-100">{currentPlayer?.name ?? 'Jugador'}</p>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-base" style={{ backgroundColor: (currentPlayer?.color ?? '#6366f1') + '33' }}>
+                {currentPlayer?.avatar_emoji ?? '🎲'}
+              </div>
+              <p className="font-semibold text-gray-800 dark:text-gray-100">{currentPlayer?.name ?? 'Jugador'}</p>
+            </div>
+          )}
           <InputRenderer
             inputs={activeInputs}
             values={currentValues}
             onChange={(id, val) => setValues({ ...currentValues, [id]: val })}
+            takenBy={Object.keys(takenBy).length > 0 ? takenBy : undefined}
           />
           {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
         </Card>

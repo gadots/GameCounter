@@ -5,9 +5,10 @@ interface Props {
   values: InputValues;
   onChange: (id: string, value: number | boolean) => void;
   disabled?: boolean;
+  takenBy?: Record<string, string>; // inputId → player name that claimed it
 }
 
-export function InputRenderer({ inputs, values, onChange, disabled }: Props) {
+export function InputRenderer({ inputs, values, onChange, disabled, takenBy }: Props) {
   return (
     <div className="space-y-3">
       {inputs.map(input => (
@@ -17,6 +18,7 @@ export function InputRenderer({ inputs, values, onChange, disabled }: Props) {
           value={values[input.id] ?? (input.default ?? (input.type === 'toggle' ? false : 0))}
           onChange={val => onChange(input.id, val)}
           disabled={disabled}
+          takenByPlayer={takenBy?.[input.id]}
         />
       ))}
     </div>
@@ -28,29 +30,33 @@ interface FieldProps {
   value: number | boolean;
   onChange: (val: number | boolean) => void;
   disabled?: boolean;
+  takenByPlayer?: string;
 }
 
-function InputField({ def, value, onChange, disabled }: FieldProps) {
+function InputField({ def, value, onChange, disabled, takenByPlayer }: FieldProps) {
+  const effectiveDisabled = disabled || !!takenByPlayer;
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1 min-w-0">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{def.label}</span>
-        {def.description && (
+        {takenByPlayer ? (
+          <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">Asignado a {takenByPlayer}</p>
+        ) : def.description && (
           <p className="text-xs text-gray-400 mt-0.5">{def.description}</p>
         )}
       </div>
       <div className="shrink-0">
         {def.type === 'toggle' && (
-          <Toggle value={value as boolean} onChange={onChange} disabled={disabled} />
+          <Toggle value={value as boolean} onChange={onChange} disabled={effectiveDisabled} />
         )}
         {def.type === 'stepper' && (
-          <Stepper value={value as number} def={def} onChange={onChange} disabled={disabled} />
+          <Stepper value={value as number} def={def} onChange={onChange} disabled={effectiveDisabled} />
         )}
         {def.type === 'number' && (
-          <NumberField value={value as number} def={def} onChange={onChange} disabled={disabled} />
+          <NumberField value={value as number} def={def} onChange={onChange} disabled={effectiveDisabled} />
         )}
         {def.type === 'select' && (
-          <SelectField value={value as number} def={def} onChange={onChange} disabled={disabled} />
+          <SelectField value={value as number} def={def} onChange={onChange} disabled={effectiveDisabled} />
         )}
       </div>
     </div>

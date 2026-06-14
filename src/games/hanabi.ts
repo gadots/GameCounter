@@ -8,6 +8,7 @@ export default {
     max_players: 5,
     scoring_mode: 'end_of_game',
     target_score: 25,
+    cooperative: true,
     tiebreaker_hint: 'Puntaje compartido: todos ganan o pierden igual. Meta legendaria: 25 puntos.',
     tags: ['cooperativo', 'cartas', 'deducción', 'comunicación'],
     bgg_id: 98778,

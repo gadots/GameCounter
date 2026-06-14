@@ -16,8 +16,8 @@ export default {
   inputs: [
     { id: 'settlements',  label: 'Asentamientos',          type: 'stepper', min: 0, max: 5, description: '1 VP cada uno' },
     { id: 'cities',       label: 'Ciudades',                type: 'stepper', min: 0, max: 4, description: '2 VP cada una' },
-    { id: 'longest_road', label: 'Camino más largo',        type: 'toggle',  description: '+2 VP. Solo un jugador puede tenerlo.' },
-    { id: 'largest_army', label: 'Ejército más grande',     type: 'toggle',  description: '+2 VP. Solo un jugador puede tenerlo.' },
+    { id: 'longest_road', label: 'Camino más largo',    type: 'toggle', exclusive_group: 'catan_road',  description: '+2 VP. Solo un jugador puede tenerlo.' },
+    { id: 'largest_army', label: 'Ejército más grande', type: 'toggle', exclusive_group: 'catan_army', description: '+2 VP. Solo un jugador puede tenerlo.' },
     { id: 'vp_cards',     label: 'Cartas de Punto de Victoria', type: 'stepper', min: 0, max: 5, description: '1 VP cada una' },
   ],
 

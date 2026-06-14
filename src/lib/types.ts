@@ -11,6 +11,7 @@ export interface InputDef {
   default?: number | boolean;
   description?: string;
   options?: string[];
+  exclusive_group?: string;
 }
 
 export type ScoringMode = 'end_of_game' | 'per_round';
@@ -27,6 +28,7 @@ export interface GameMetadata {
   tags?: string[];
   bgg_id?: number;
   image_url?: string;
+  cooperative?: boolean;
 }
 
 export interface RoundContext {
