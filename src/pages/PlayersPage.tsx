@@ -5,6 +5,7 @@ import { sessionsStorage } from '../lib/storage';
 import { computeEloRatings } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
 
 export function PlayersPage() {
@@ -12,6 +13,7 @@ export function PlayersPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [tab, setTab] = useState<'list' | 'metrics'>('list');
+  const [showEloInfo, setShowEloInfo] = useState(false);
 
   const handleAdd = () => {
     const trimmed = name.trim();
@@ -43,8 +45,10 @@ export function PlayersPage() {
         elo,
       };
     })
-    .filter(m => m.sessions > 0)
-    .sort((a, b) => b.elo - a.elo || b.wins - a.wins);
+    .filter(m => m.sessions > 0);
+
+  const byElo = [...metrics].sort((a, b) => b.elo - a.elo || b.wins - a.wins);
+  const byWins = [...metrics].sort((a, b) => b.wins - a.wins || b.winRate - a.winRate);
 
   return (
     <div className="p-4 space-y-4">
@@ -117,45 +121,99 @@ export function PlayersPage() {
           {metrics.length === 0 ? (
             <p className="text-center text-gray-400 py-12">Todavía no hay partidas jugadas.</p>
           ) : (
-            <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
-              {metrics.map((m, i) => (
-                <div
-                  key={m.player.id}
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
-                  onClick={() => navigate(`/players/${m.player.id}`)}
-                >
-                  <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
-                    style={{ backgroundColor: m.player.color + '33' }}
+            <div className="space-y-5">
+              {/* ELO ranking */}
+              <section>
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ranking ELO</h2>
+                  <button
+                    onClick={() => setShowEloInfo(true)}
+                    className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 text-[10px] font-bold flex items-center justify-center leading-none"
                   >
-                    {m.player.avatar_emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
-                    <p className="text-xs text-gray-400 truncate">
-                      {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
-                      {m.topGame && ` · ${m.topGame}`}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.elo}</p>
-                    <p className={`text-xs font-medium ${
-                      m.elo > 1000
-                        ? 'text-emerald-500 dark:text-emerald-400'
-                        : m.elo < 1000
-                        ? 'text-red-400'
-                        : 'text-gray-400'
-                    }`}>
-                      {m.elo > 1000 ? `+${m.elo - 1000}` : m.elo < 1000 ? `${m.elo - 1000}` : '±0'}
-                    </p>
-                  </div>
+                    ?
+                  </button>
                 </div>
-              ))}
+                <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
+                  {byElo.map((m, i) => (
+                    <div
+                      key={m.player.id}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
+                      onClick={() => navigate(`/players/${m.player.id}`)}
+                    >
+                      <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: m.player.color + '33' }}>
+                        {m.player.avatar_emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
+                          {m.topGame && ` · ${m.topGame}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.elo}</p>
+                        <p className={`text-xs font-medium ${m.elo > 1000 ? 'text-emerald-500 dark:text-emerald-400' : m.elo < 1000 ? 'text-red-400' : 'text-gray-400'}`}>
+                          {m.elo > 1000 ? `+${m.elo - 1000}` : m.elo < 1000 ? `${m.elo - 1000}` : '±0'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Wins ranking */}
+              <section>
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por victorias</h2>
+                <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
+                  {byWins.map((m, i) => (
+                    <div
+                      key={m.player.id}
+                      className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
+                      onClick={() => navigate(`/players/${m.player.id}`)}
+                    >
+                      <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: m.player.color + '33' }}>
+                        {m.player.avatar_emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
+                          {m.topGame && ` · ${m.topGame}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.wins} vic.</p>
+                        <p className="text-xs text-gray-400">{m.winRate}% ganadas</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
           )}
         </>
       )}
+
+      <Modal
+        open={showEloInfo}
+        title="¿Qué es el ELO?"
+        confirmLabel="Entendido"
+        cancelLabel=""
+        onConfirm={() => setShowEloInfo(false)}
+        onCancel={() => setShowEloInfo(false)}
+      >
+        <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+          <p>El ELO es un sistema de rating que refleja el nivel competitivo de cada jugador a lo largo del tiempo.</p>
+          <ul className="space-y-2">
+            <li className="flex gap-2"><span className="text-indigo-500 font-bold shrink-0">1000</span><span>es el punto de partida de todos</span></li>
+            <li className="flex gap-2"><span className="text-emerald-500 font-bold shrink-0">▲</span><span>Ganar suma puntos. Ganarle a alguien con más ELO suma más</span></li>
+            <li className="flex gap-2"><span className="text-red-400 font-bold shrink-0">▼</span><span>Perder resta puntos. Perder contra alguien con menos ELO resta más</span></li>
+            <li className="flex gap-2"><span className="text-gray-400 font-bold shrink-0">N</span><span>En partidas de más de 2 jugadores, se comparan todos contra todos</span></li>
+          </ul>
+        </div>
+      </Modal>
     </div>
   );
 }
