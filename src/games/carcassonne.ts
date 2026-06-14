@@ -13,11 +13,10 @@ export default {
   },
 
   inputs: [
-    { id: 'cities',      label: 'Ciudades',      type: 'number', min: 0, description: 'Puntos totales de ciudades completadas e incompletas' },
-    { id: 'roads',       label: 'Caminos',       type: 'number', min: 0, description: 'Puntos totales de caminos completos e incompletos' },
-    { id: 'monasteries', label: 'Monasterios',   type: 'number', min: 0, description: 'Puntos totales de monasterios (completados ×9, incompletos ×losetas)' },
-    { id: 'farms',       label: 'Granjas',       type: 'number', min: 0, description: '+3 puntos por ciudad completada adyacente al meeple de granja' },
-    { id: 'pennants',    label: 'Escudos',       type: 'stepper', min: 0, description: '+2 VP extra por escudo en ciudad completada (ya incluidos arriba si se prefiere)' },
+    { id: 'cities',      label: 'Ciudades',    type: 'number', min: 0, description: 'Pts de ciudades completadas (×2/loseta + ×2/escudo) e incompletas (×1 + ×1/escudo)' },
+    { id: 'roads',       label: 'Caminos',     type: 'number', min: 0, description: 'Pts de caminos completos (×1/loseta) e incompletos (×1)' },
+    { id: 'monasteries', label: 'Monasterios', type: 'number', min: 0, description: 'Completados: 9 pts. Incompletos: 1 pt por cada loseta circundante + el propio' },
+    { id: 'farms',       label: 'Granjas',     type: 'number', min: 0, description: '+3 pts por cada ciudad completada adyacente al meeple de granja' },
   ],
 
   score({ cities, roads, monasteries, farms }) {
