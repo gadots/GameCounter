@@ -41,7 +41,7 @@ export default {
     inputs: [
       { id: 'pudding', label: 'Flanes acumulados', type: 'select',
         options: ['Sin bonus (0)', 'Menos flanes (−6 pts)', 'Más flanes (+6 pts)'],
-        description: 'Al final de las 3 rondas: quién tiene más flanes recibe +6; quién tiene menos, −6. Empate: se divide.' },
+        description: 'Al final de las 3 rondas: más flanes = +6, menos flanes = −6. Empate: se divide y redondea. En 2 jugadores solo hay bonus (+6), sin penalización.' },
     ],
     score({ pudding }) {
       return [0, -6, 6][pudding as number];

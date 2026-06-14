@@ -192,6 +192,11 @@ export function SessionPage() {
                 Ir a bonus final
               </Button>
             )}
+            {module.metadata.scoring_mode === 'per_round' && !module.metadata.total_rounds && !module.metadata.target_score && !module.final_round && (
+              <Button variant="ghost" size="sm" onClick={endSession}>
+                Terminar
+              </Button>
+            )}
           </div>
         </div>
 
