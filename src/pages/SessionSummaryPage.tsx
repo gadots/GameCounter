@@ -53,23 +53,23 @@ export function SessionSummaryPage() {
 
       <Card>
         <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Resultado final</p>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {totals.sort((a, b) => b.grand_total - a.grand_total).map((t, i) => {
             const player = players.find(p => p.id === t.player_id);
             const color = player?.color ?? '#6366f1';
             return (
               <div
                 key={t.player_id}
-                className="flex items-center gap-3 rounded-xl p-2 -mx-2 transition-all"
-                style={t.is_winner ? { backgroundColor: color + '15', boxShadow: `0 0 0 1.5px ${color}55` } : {}}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all border-l-[3px] ${t.is_winner ? '' : 'border-transparent'}`}
+                style={t.is_winner ? { borderLeftColor: color, backgroundColor: color + '22' } : {}}
               >
                 <span className="text-gray-400 text-sm w-4 shrink-0">{i + 1}</span>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0" style={{ backgroundColor: color + '33' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-base shrink-0" style={{ backgroundColor: color + '44' }}>
                   {player?.avatar_emoji ?? '🎲'}
                 </div>
                 <span className="flex-1 text-gray-800 dark:text-gray-100">{resolvePlayerName(t.player_id, players, session)}</span>
                 {t.is_winner && <span>🏆</span>}
-                <span className="score-num text-xl font-bold" style={{ color: t.is_winner ? color : undefined }}>
+                <span className="score-num text-xl font-bold text-gray-900 dark:text-white">
                   {t.grand_total}
                 </span>
               </div>

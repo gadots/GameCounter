@@ -93,7 +93,7 @@ export function PlayersPage() {
               >
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0"
-                  style={{ backgroundColor: player.color + '33' }}
+                  style={{ backgroundColor: player.color + '44' }}
                 >
                   {player.avatar_emoji}
                 </div>

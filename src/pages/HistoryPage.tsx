@@ -86,7 +86,7 @@ export function HistoryPage() {
                         key={pid}
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all ${isWinner ? 'ring-2' : ''}`}
                         style={{
-                          backgroundColor: (p?.color ?? '#6366f1') + '22',
+                          backgroundColor: (p?.color ?? '#6366f1') + '44',
                           boxShadow: isWinner ? `0 0 0 2px ${color}` : undefined,
                         }}
                         title={resolvePlayerName(pid, players, session)}
