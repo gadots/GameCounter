@@ -29,7 +29,7 @@ const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <Navigate to="/home" replace /> },
+      { index: true, element: <Navigate to="/library" replace /> },
       { path: 'home', element: <HomePage /> },
       { path: 'library', element: <LibraryPage /> },
       { path: 'session/new', element: <NewSessionPage /> },

@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Play, Users, History } from 'lucide-react';
+import { Library, Play, Users, History } from 'lucide-react';
 import { sessionsStorage } from '../../lib/storage';
 
 export function BottomNav() {
   const activeSession = sessionsStorage.getActive();
 
   const tabs = [
-    { to: '/home', label: 'Inicio', Icon: Home },
+    { to: '/library', label: 'Librería', Icon: Library },
     {
       to: activeSession ? `/session/${activeSession.id}` : '/session/new',
       label: 'Jugar',
