@@ -13,6 +13,7 @@ export function PlayersPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [tab, setTab] = useState<'list' | 'metrics'>('list');
+  const [metricsView, setMetricsView] = useState<'elo' | 'wins'>('elo');
   const [showEloInfo, setShowEloInfo] = useState(false);
 
   const handleAdd = () => {
@@ -121,50 +122,73 @@ export function PlayersPage() {
           {metrics.length === 0 ? (
             <p className="text-center text-gray-400 py-12">Todavía no hay partidas jugadas.</p>
           ) : (
-            <div className="space-y-5">
-              {/* ELO ranking */}
-              <section>
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Ranking ELO</h2>
-                  <button
-                    onClick={() => setShowEloInfo(true)}
-                    className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 text-[10px] font-bold flex items-center justify-center leading-none"
-                  >
-                    ?
-                  </button>
-                </div>
-                <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
-                  {byElo.map((m, i) => (
-                    <div
-                      key={m.player.id}
-                      className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
-                      onClick={() => navigate(`/players/${m.player.id}`)}
-                    >
-                      <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: m.player.color + '33' }}>
-                        {m.player.avatar_emoji}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
-                        <p className="text-xs text-gray-400 truncate">
-                          {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
-                          {m.topGame && ` · ${m.topGame}`}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.elo}</p>
-                        <p className={`text-xs font-medium ${m.elo > 1000 ? 'text-emerald-500 dark:text-emerald-400' : m.elo < 1000 ? 'text-red-400' : 'text-gray-400'}`}>
-                          {m.elo > 1000 ? `+${m.elo - 1000}` : m.elo < 1000 ? `${m.elo - 1000}` : '±0'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
+            <>
+              {/* Segmented control */}
+              <div className="flex items-center bg-gray-100 dark:bg-gray-700/60 rounded-xl p-1">
+                <button
+                  onClick={() => setMetricsView('elo')}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    metricsView === 'elo'
+                      ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  Ranking ELO
+                </button>
+                <button
+                  onClick={() => setMetricsView('wins')}
+                  className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    metricsView === 'wins'
+                      ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  Victorias
+                </button>
+              </div>
 
-              {/* Wins ranking */}
-              <section>
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Por victorias</h2>
+              {metricsView === 'elo' && (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs text-gray-400">Puntuación basada en rival y resultado</p>
+                    <button
+                      onClick={() => setShowEloInfo(true)}
+                      className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 text-[10px] font-bold flex items-center justify-center leading-none shrink-0"
+                    >
+                      ?
+                    </button>
+                  </div>
+                  <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
+                    {byElo.map((m, i) => (
+                      <div
+                        key={m.player.id}
+                        className="flex items-center gap-3 px-4 py-3 cursor-pointer active:bg-gray-50 dark:active:bg-gray-700/30"
+                        onClick={() => navigate(`/players/${m.player.id}`)}
+                      >
+                        <span className="text-sm text-gray-400 w-4 shrink-0">{i + 1}</span>
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: m.player.color + '33' }}>
+                          {m.player.avatar_emoji}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
+                          <p className="text-xs text-gray-400 truncate">
+                            {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
+                            {m.topGame && ` · ${m.topGame}`}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.elo}</p>
+                          <p className={`text-xs font-medium ${m.elo > 1000 ? 'text-emerald-500 dark:text-emerald-400' : m.elo < 1000 ? 'text-red-400' : 'text-gray-400'}`}>
+                            {m.elo > 1000 ? `+${m.elo - 1000}` : m.elo < 1000 ? `${m.elo - 1000}` : '±0'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {metricsView === 'wins' && (
                 <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
                   {byWins.map((m, i) => (
                     <div
@@ -190,8 +214,8 @@ export function PlayersPage() {
                     </div>
                   ))}
                 </div>
-              </section>
-            </div>
+              )}
+            </>
           )}
         </>
       )}
