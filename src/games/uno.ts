@@ -10,6 +10,7 @@ export default {
     target_score: 500,
     tiebreaker_hint: 'Gana el primero en llegar a 500 puntos acumulados.',
     tags: ['cartas', 'familiar', 'clásico'],
+    bgg_id: 2223,
   },
 
   inputs: [

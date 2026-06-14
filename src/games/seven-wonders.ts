@@ -14,7 +14,7 @@ export default {
 
   inputs: [
     { id: 'military',  label: 'Conflictos militares', type: 'number', description: 'Puede ser negativo por derrotas (-1 por era)' },
-    { id: 'treasury',  label: 'Tesoro',               type: 'stepper', min: 0, description: '1 punto por cada 3 monedas' },
+    { id: 'treasury',  label: 'Tesoro (monedas)',      type: 'number',  min: 0, description: 'Ingresá tu cantidad de monedas — la app calcula los VP (÷3, redondeado hacia abajo)' },
     { id: 'wonders',   label: 'Maravillas',            type: 'stepper', min: 0, max: 4, description: 'Puntos de etapas construidas de la maravilla' },
     { id: 'civilian',  label: 'Edificios civiles',     type: 'stepper', min: 0, description: 'Puntos de cartas azules' },
     { id: 'commerce',  label: 'Comercio',              type: 'stepper', min: 0, description: 'Puntos de cartas amarillas' },
