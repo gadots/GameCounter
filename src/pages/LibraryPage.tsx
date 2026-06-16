@@ -13,20 +13,43 @@ import { PageHeader } from '../components/layout/PageHeader';
 export function LibraryPage() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'installed' | 'all' | 'stats'>('installed');
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const { installed, install, uninstall, isInstalled, toggleFavorite } = useInstalledGames();
   const navigate = useNavigate();
 
   const allModules = getGameModules();
   const allSessions = useSessions();
   const { players: allPlayers } = usePlayers();
+
+  // Collect tags that appear in 2+ games, sorted by frequency
+  const availableTags = useMemo(() => {
+    const freq: Record<string, number> = {};
+    allModules.forEach(m => (m.metadata.tags ?? []).forEach(t => { freq[t] = (freq[t] ?? 0) + 1; }));
+    return Object.entries(freq)
+      .filter(([, count]) => count >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag]) => tag);
+  }, [allModules]);
+
+  const toggleTag = (tag: string) => setSelectedTags(prev => {
+    const next = new Set(prev);
+    next.has(tag) ? next.delete(tag) : next.add(tag);
+    return next;
+  });
+
   const matchesSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
-  const countAll = allModules.filter(m => matchesSearch(m.metadata.name)).length;
-  const countInstalled = allModules.filter(m => matchesSearch(m.metadata.name) && isInstalled(m.metadata.id)).length;
+  const matchesTags = (tags: string[] = []) =>
+    selectedTags.size === 0 || tags.some(t => selectedTags.has(t));
+  const matchesFilters = (m: ReturnType<typeof getGameModules>[number]) =>
+    matchesSearch(m.metadata.name) && matchesTags(m.metadata.tags);
+
+  const countAll = allModules.filter(m => matchesFilters(m)).length;
+  const countInstalled = allModules.filter(m => matchesFilters(m) && isInstalled(m.metadata.id)).length;
 
   const filtered = allModules
     .filter(m => {
       const matchesTab = tab === 'all' || isInstalled(m.metadata.id);
-      return matchesSearch(m.metadata.name) && matchesTab;
+      return matchesFilters(m) && matchesTab;
     })
     .sort((a, b) => {
       if (tab !== 'installed') return 0;
@@ -70,13 +93,38 @@ export function LibraryPage() {
       </div>
 
       {tab !== 'stats' && (
-        <input
-          type="search"
-          placeholder="Buscar juego..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-4 py-2.5 text-sm"
-        />
+        <div className="space-y-2">
+          <input
+            type="search"
+            placeholder="Buscar juego..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-4 py-2.5 text-sm"
+          />
+          <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
+            {availableTags.map(tag => (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0 ${
+                  selectedTags.has(tag)
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+            {selectedTags.size > 0 && (
+              <button
+                onClick={() => setSelectedTags(new Set())}
+                className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 text-indigo-500 dark:text-indigo-400 hover:text-indigo-700"
+              >
+                Limpiar ×
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {tab !== 'stats' && (
