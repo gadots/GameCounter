@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers playwright test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -47,6 +48,7 @@
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
     "vite-plugin-pwa": "^1.3.0",
-    "vitest": "^4.1.8"
+    "vitest": "^4.1.8",
+    "@playwright/test": "1.56.0"
   }
 }
