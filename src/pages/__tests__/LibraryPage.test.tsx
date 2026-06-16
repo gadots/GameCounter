@@ -14,7 +14,7 @@ vi.mock('react-router-dom', () => ({
 const mockInstall = vi.fn();
 const mockUninstall = vi.fn();
 const mockToggleFavorite = vi.fn();
-const mockIsInstalled = vi.fn((id: string) => false);
+const mockIsInstalled = vi.fn((_id: string) => false);
 const mockInstalled = vi.fn(() => [] as { game_id: string; installed_at: string; is_favorite: boolean }[]);
 
 vi.mock('../../hooks/useInstalledGames', () => ({
