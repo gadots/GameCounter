@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getGameModules, getGameModule, loadAllModules } from '../gameLoader';
 
-// Note: gameLoader uses a module-level cache (_cache). The caching test verifies
-// that repeated calls return the same array reference.
+// Built-ins are cached; custom games are merged fresh each call.
 
 describe('getGameModules', () => {
   it('returns a non-empty array of game modules', () => {
@@ -11,10 +10,10 @@ describe('getGameModules', () => {
     expect(modules.length).toBeGreaterThan(0);
   });
 
-  it('returns the same reference on repeated calls (caching)', () => {
+  it('returns equivalent content on repeated calls', () => {
     const first = getGameModules();
     const second = getGameModules();
-    expect(first).toBe(second);
+    expect(first).toStrictEqual(second);
   });
 
   it('every module has metadata.id as a string', () => {

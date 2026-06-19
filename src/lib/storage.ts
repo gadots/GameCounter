@@ -1,10 +1,11 @@
-import type { Player, Session, InstalledGame, AppSettings } from './types';
+import type { Player, Session, InstalledGame, AppSettings, CustomGameDef } from './types';
 
 const KEYS = {
   players: 'gc_players',
   sessions: 'gc_sessions',
   installedGames: 'gc_installed_games',
   settings: 'gc_settings',
+  customGames: 'gc_custom_games',
 } as const;
 
 const KEY_SET = new Set<string>(Object.values(KEYS));
@@ -139,6 +140,23 @@ export const installedGamesStorage = {
       g.game_id === game_id ? { ...g, is_favorite: !g.is_favorite } : g
     );
     installedGamesStorage.save(all);
+  },
+};
+
+// ─── Custom Games ─────────────────────────────────────────────────────────
+
+export const customGamesStorage = {
+  subscribe: (listener: () => void) => subscribe(KEYS.customGames, listener),
+  getAll: (): CustomGameDef[] => get<CustomGameDef[]>(KEYS.customGames, []),
+  getById: (id: string): CustomGameDef | null =>
+    customGamesStorage.getAll().find(g => g.id === id) ?? null,
+  upsert: (game: CustomGameDef) => {
+    const all = customGamesStorage.getAll();
+    const idx = all.findIndex(g => g.id === game.id);
+    set(KEYS.customGames, idx >= 0 ? all.map(g => g.id === game.id ? game : g) : [...all, game]);
+  },
+  remove: (id: string) => {
+    set(KEYS.customGames, customGamesStorage.getAll().filter(g => g.id !== id));
   },
 };
 

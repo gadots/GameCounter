@@ -2,12 +2,13 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
+import { useCustomGames } from '../hooks/useCustomGames';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSessions } from '../hooks/useSession';
 import { computeGameRecords } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Star } from 'lucide-react';
+import { Star, Pencil, Plus } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 
 export function LibraryPage() {
@@ -15,9 +16,11 @@ export function LibraryPage() {
   const [tab, setTab] = useState<'installed' | 'all' | 'stats'>('installed');
   const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const { installed, install, uninstall, isInstalled, toggleFavorite } = useInstalledGames();
+  const { customGames, isCustomGame } = useCustomGames();
   const navigate = useNavigate();
 
-  const allModules = getGameModules();
+  // Re-derive modules whenever custom games change so the list stays reactive
+  const allModules = useMemo(() => getGameModules(), [customGames]);
   const allSessions = useSessions();
   const { players: allPlayers } = usePlayers();
 
@@ -69,7 +72,12 @@ export function LibraryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title="Librería de juegos" />
+      <div className="flex items-center justify-between gap-2">
+        <PageHeader title="Librería de juegos" />
+        <Button size="sm" variant="secondary" onClick={() => navigate('/games/new')} className="shrink-0 flex items-center gap-1">
+          <Plus size={14} /> Crear juego
+        </Button>
+      </div>
 
       <div className="flex gap-2 overflow-x-auto">
         <button
@@ -138,7 +146,12 @@ export function LibraryPage() {
               return (
                 <Card key={m.metadata.id} className="flex items-center gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-white truncate">{m.metadata.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-semibold text-gray-900 dark:text-white truncate">{m.metadata.name}</p>
+                      {isCustomGame(m.metadata.id) && (
+                        <span className="shrink-0 text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full px-1.5 py-0.5 font-medium">propio</span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {m.metadata.min_players}–{m.metadata.max_players} jugadores
                       {m.metadata.scoring_mode === 'per_round' && ` · ${m.metadata.total_rounds} rondas`}
@@ -166,7 +179,13 @@ export function LibraryPage() {
                       {inst ? (
                         <>
                           <Button size="sm" onClick={() => navigate(`/session/new?game=${m.metadata.id}`)}>Jugar</Button>
-                          <Button size="sm" variant="ghost" onClick={() => uninstall(m.metadata.id)}>Quitar</Button>
+                          {isCustomGame(m.metadata.id) ? (
+                            <Button size="sm" variant="ghost" onClick={() => navigate(`/games/${m.metadata.id}/edit`)} className="flex items-center gap-1 justify-center">
+                              <Pencil size={12} /> Editar
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" onClick={() => uninstall(m.metadata.id)}>Quitar</Button>
+                          )}
                         </>
                       ) : (
                         <Button size="sm" variant="secondary" onClick={() => install(m.metadata.id)}>+ Instalar</Button>

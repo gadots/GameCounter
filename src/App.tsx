@@ -16,6 +16,7 @@ const SessionSummaryPage = lazy(() => import('./pages/SessionSummaryPage').then(
 const PlayerDetailPage = lazy(() => import('./pages/PlayerDetailPage').then(m => ({ default: m.PlayerDetailPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SharePage = lazy(() => import('./pages/SharePage').then(m => ({ default: m.SharePage })));
+const CustomGameEditorPage = lazy(() => import('./pages/CustomGameEditorPage').then(m => ({ default: m.CustomGameEditorPage })));
 
 function PageFallback() {
   return (
@@ -61,6 +62,8 @@ const router = createBrowserRouter([
       { path: 'history', element: <HistoryPage /> },
       { path: 'history/:id', element: <SessionSummaryPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'games/new', element: <CustomGameEditorPage /> },
+      { path: 'games/:id/edit', element: <CustomGameEditorPage /> },
     ],
   },
 ]);

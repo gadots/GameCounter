@@ -106,3 +106,33 @@ export interface PlayerTotals {
   grand_total: number;
   is_winner: boolean;
 }
+
+// ─── Custom Games ──────────────────────────────────────────────────────────
+
+export interface ScoringRule {
+  input_id: string;
+  // number/stepper: score += value * multiplier
+  // toggle: score += multiplier if true, else 0
+  multiplier: number;
+}
+
+export interface CustomGameDef {
+  id: string;
+  name: string;
+  min_players: number;
+  max_players: number;
+  scoring_mode: ScoringMode;
+  target_score?: number;
+  inputs: Array<{
+    id: string;
+    label: string;
+    type: 'number' | 'stepper' | 'toggle';
+    min?: number;
+    max?: number;
+    default?: number | boolean;
+    description?: string;
+  }>;
+  scoring_rules: ScoringRule[];
+  created_at: string;
+  updated_at: string;
+}
