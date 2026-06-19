@@ -149,7 +149,10 @@ export function LibraryPage() {
                     <div className="flex items-center gap-1.5">
                       <p className="font-semibold text-gray-900 dark:text-white truncate">{m.metadata.name}</p>
                       {isCustomGame(m.metadata.id) && (
-                        <span className="shrink-0 text-xs bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 rounded-full px-1.5 py-0.5 font-medium">propio</span>
+                        <span className="shrink-0 inline-flex items-center gap-0.5 text-xs bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded-full px-2 py-0.5 font-semibold border border-violet-200 dark:border-violet-700/50">
+                          <Pencil size={10} strokeWidth={2.5} />
+                          propio
+                        </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
