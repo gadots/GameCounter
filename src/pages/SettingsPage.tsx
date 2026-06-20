@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { playersStorage, sessionsStorage, installedGamesStorage } from '../lib/storage';
+import { playersStorage, sessionsStorage, installedGamesStorage, customGamesStorage } from '../lib/storage';
 import { applyTheme } from '../lib/theme';
 import { validateBackup, type BackupData } from '../lib/backup';
 import { useSettings } from '../hooks/useSettings';
@@ -8,12 +8,26 @@ import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
 import type { AppSettings } from '../lib/types';
 
+interface ExportOptions {
+  players: boolean;
+  sessions: boolean;
+  custom_games: boolean;
+  settings: boolean;
+}
+
 export function SettingsPage() {
   const { settings, update } = useSettings();
   const [exported, setExported] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<BackupData | null>(null);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [showExportOptions, setShowExportOptions] = useState(false);
+  const [exportOptions, setExportOptions] = useState<ExportOptions>({
+    players: true,
+    sessions: true,
+    custom_games: true,
+    settings: true,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,6 +50,7 @@ export function SettingsPage() {
     playersStorage.save(data.players);
     sessionsStorage.save(data.sessions);
     if (data.installed_games) installedGamesStorage.save(data.installed_games);
+    if (data.custom_games) data.custom_games.forEach(g => customGamesStorage.upsert(g));
     if (data.settings) {
       update(data.settings);
       applyTheme(data.settings.theme ?? 'system');
@@ -51,15 +66,19 @@ export function SettingsPage() {
     update({ show_running_totals });
   };
 
+  const toggleExportOption = (key: keyof ExportOptions) =>
+    setExportOptions(o => ({ ...o, [key]: !o[key] }));
+
   const handleExport = () => {
-    const data = {
+    const data: Record<string, unknown> = {
       exported_at: new Date().toISOString(),
       version: 1,
-      players: playersStorage.getAll(),
-      sessions: sessionsStorage.getAll(),
+      players: exportOptions.players ? playersStorage.getAll() : [],
+      sessions: exportOptions.sessions ? sessionsStorage.getAll() : [],
       installed_games: installedGamesStorage.getAll(),
-      settings,
     };
+    if (exportOptions.custom_games) data.custom_games = customGamesStorage.getAll();
+    if (exportOptions.settings) data.settings = settings;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -67,6 +86,7 @@ export function SettingsPage() {
     a.download = `gamecounter-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    setShowExportOptions(false);
     setExported(true);
     setTimeout(() => setExported(false), 2500);
   };
@@ -119,7 +139,7 @@ export function SettingsPage() {
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Datos</p>
         <div className="flex gap-2">
           <button
-            onClick={handleExport}
+            onClick={() => setShowExportOptions(true)}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
               exported
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
@@ -154,6 +174,39 @@ export function SettingsPage() {
           <p className="text-xs text-gray-400 mt-1.5 text-center">Borra partidas y jugadores. No afecta la librería.</p>
         </div>
       </Card>
+
+      <Modal
+        open={showExportOptions}
+        title="¿Qué querés exportar?"
+        confirmLabel="Descargar"
+        cancelLabel="Cancelar"
+        onConfirm={handleExport}
+        onCancel={() => setShowExportOptions(false)}
+      >
+        <div className="space-y-3 py-1">
+          {(
+            [
+              { key: 'players', label: 'Jugadores', desc: `${playersStorage.getAll().length} jugadores` },
+              { key: 'sessions', label: 'Partidas', desc: `${sessionsStorage.getAll().length} partidas` },
+              { key: 'custom_games', label: 'Mis juegos', desc: `${customGamesStorage.getAll().length} juegos personalizados` },
+              { key: 'settings', label: 'Preferencias', desc: 'Tema y ajustes de la app' },
+            ] as { key: keyof ExportOptions; label: string; desc: string }[]
+          ).map(({ key, label, desc }) => (
+            <label key={key} className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={exportOptions[key]}
+                onChange={() => toggleExportOption(key)}
+                className="w-4 h-4 rounded accent-indigo-600"
+              />
+              <span className="flex-1">
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{label}</span>
+                <span className="text-xs text-gray-400 ml-1.5">{desc}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </Modal>
 
       <Modal
         open={showDeleteAll}

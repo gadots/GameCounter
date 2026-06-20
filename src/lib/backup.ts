@@ -1,4 +1,4 @@
-import type { Player, Session, InstalledGame, AppSettings } from './types';
+import type { Player, Session, InstalledGame, AppSettings, CustomGameDef } from './types';
 
 export interface BackupData {
   version: number;
@@ -6,6 +6,7 @@ export interface BackupData {
   players: Player[];
   sessions: Session[];
   installed_games?: InstalledGame[];
+  custom_games?: CustomGameDef[];
   settings?: AppSettings;
 }
 
@@ -64,6 +65,9 @@ export function validateBackup(raw: string): BackupValidation {
   const installed_games = Array.isArray(parsed.installed_games)
     ? (parsed.installed_games as InstalledGame[])
     : undefined;
+  const custom_games = Array.isArray(parsed.custom_games)
+    ? (parsed.custom_games as CustomGameDef[])
+    : undefined;
   const settings = isObject(parsed.settings)
     ? (parsed.settings as unknown as AppSettings)
     : undefined;
@@ -75,6 +79,7 @@ export function validateBackup(raw: string): BackupValidation {
       players: parsed.players as Player[],
       sessions: parsed.sessions as Session[],
       installed_games,
+      custom_games,
       settings,
     },
   };
