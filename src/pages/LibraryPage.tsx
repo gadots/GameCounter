@@ -8,7 +8,7 @@ import { useSessions } from '../hooks/useSession';
 import { computeGameRecords } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Star, Pencil, Plus } from 'lucide-react';
+import { Star, Pencil, Plus, Settings } from 'lucide-react';
 import { PageHeader } from '../components/layout/PageHeader';
 
 export function LibraryPage() {
@@ -73,10 +73,17 @@ export function LibraryPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <PageHeader title="Librería de juegos" />
+        <PageHeader title="Librería de juegos" showSettings={false} />
         <Button size="sm" variant="secondary" onClick={() => navigate('/games/new')} className="shrink-0 flex items-center gap-1">
           <Plus size={14} /> Crear juego
         </Button>
+        <button
+          onClick={() => navigate('/settings')}
+          className="p-2 -mr-2 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
+          aria-label="Ajustes"
+        >
+          <Settings size={20} />
+        </button>
       </div>
 
       <div className="flex gap-2 overflow-x-auto">
