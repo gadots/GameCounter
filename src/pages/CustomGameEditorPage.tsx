@@ -6,6 +6,7 @@ import { useCustomGames } from '../hooks/useCustomGames';
 import type { CustomGameDef, ScoringRule, ScoringMode } from '../lib/types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
 
 type InputType = 'number' | 'stepper' | 'toggle';
@@ -134,6 +135,7 @@ export function CustomGameEditorPage() {
 
   const [form, setForm] = useState<FormState>(defaultForm);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -374,12 +376,22 @@ export function CustomGameEditorPage() {
 
       {isEdit && (
         <button
-          onClick={handleDelete}
+          onClick={() => setConfirmDelete(true)}
           className="w-full text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300 py-1 transition-colors"
         >
           Eliminar juego
         </button>
       )}
+
+      <Modal
+        open={confirmDelete}
+        title="¿Eliminar juego?"
+        description="El juego se eliminará de la librería. Las partidas jugadas se conservan en el historial."
+        confirmLabel="Sí, eliminar"
+        confirmVariant="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

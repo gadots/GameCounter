@@ -1,7 +1,7 @@
 import type { Session, PlayerTotals, Player } from './types';
 import type { GameModule } from './types';
 
-export function computePlayerTotals(session: Session, _module: GameModule): PlayerTotals[] {
+export function computePlayerTotals(session: Session, _module: GameModule | null): PlayerTotals[] {
   return session.player_ids.map(player_id => {
     const rounds = session.scores
       .filter(s => s.player_id === player_id)

@@ -55,7 +55,7 @@ export function SessionSummaryPage() {
     setTimeout(() => setNotesSaved(false), 2000);
   };
 
-  if (!session || !module) {
+  if (!session) {
     return <div className="p-4 text-gray-400">Partida no encontrada.</div>;
   }
 
@@ -116,7 +116,7 @@ export function SessionSummaryPage() {
         </div>
       </Card>
 
-      {module.metadata.scoring_mode === 'per_round' && (
+      {module?.metadata.scoring_mode === 'per_round' && (
         <Card>
           <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Puntajes por ronda</p>
           <div className="overflow-x-auto">
@@ -150,7 +150,7 @@ export function SessionSummaryPage() {
         </Card>
       )}
 
-      {module.metadata.tiebreaker_hint && (
+      {module?.metadata.tiebreaker_hint && (
         <p className="text-xs text-gray-400 italic text-center px-2">{module.metadata.tiebreaker_hint}</p>
       )}
 
