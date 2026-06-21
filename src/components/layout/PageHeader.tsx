@@ -11,7 +11,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, backPath, showSettings = true }: PageHeaderProps) {
   const navigate = useNavigate();
   return (
-    <div className="flex items-center gap-2.5 pt-1">
+    <div className="flex items-center gap-2.5 pt-1 flex-1 min-w-0">
       {backPath ? (
         <button
           onClick={() => navigate(backPath)}
