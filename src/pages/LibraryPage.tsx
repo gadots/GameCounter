@@ -76,9 +76,13 @@ export function LibraryPage() {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
         <PageHeader title={t('library.title')} showSettings={false} />
-        <Button size="sm" variant="secondary" onClick={() => navigate('/games/new')} className="shrink-0 flex items-center gap-1">
-          <Plus size={14} /> {t('library.createGame')}
-        </Button>
+        <button
+          onClick={() => navigate('/games/new')}
+          aria-label={t('library.createGame')}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        >
+          <Plus size={15} /> {t('library.createGame')}
+        </button>
         <button
           onClick={() => navigate('/settings')}
           className="p-2 -mr-2 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
