@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSessions } from '../hooks/useSession';
 import { computeEloRatings } from '../lib/sessionEngine';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -11,6 +12,7 @@ import { UserPlus, Settings } from 'lucide-react';
 export function PlayersPage() {
   const { players, addPlayer } = usePlayers();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [tab, setTab] = useState<'list' | 'metrics'>('list');
   const [metricsView, setMetricsView] = useState<'elo' | 'wins'>('elo');
@@ -58,11 +60,11 @@ export function PlayersPage() {
       .map(p => {
         const mySessions = completed.filter(s => s.player_ids.includes(p.id));
         const wins = mySessions.filter(s => s.winner_ids?.includes(p.id)).length;
-        const gameCounts = mySessions.reduce((acc, s) => {
+        const gameCountsMap = mySessions.reduce((acc, s) => {
           acc[s.game_name] = (acc[s.game_name] ?? 0) + 1;
           return acc;
         }, {} as Record<string, number>);
-        const topGame = Object.entries(gameCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+        const topGame = Object.entries(gameCountsMap).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
         const elo = eloRatings[p.id] ?? 1000;
         return {
           player: p,
@@ -86,19 +88,19 @@ export function PlayersPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <PageHeader title="Jugadores" showSettings={false} />
+        <PageHeader title={t('players.title')} showSettings={false} />
         <button
           onClick={() => setShowAddModal(true)}
-          aria-label="Agregar jugador"
+          aria-label={t('players.addAriaLabel')}
           className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
         >
           <UserPlus size={15} />
-          Agregar
+          {t('players.add')}
         </button>
         <button
           onClick={() => navigate('/settings')}
           className="p-2 -mr-2 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
-          aria-label="Ajustes"
+          aria-label={t('common.settings')}
         >
           <Settings size={20} />
         </button>
@@ -106,17 +108,17 @@ export function PlayersPage() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {(['list', 'metrics'] as const).map(t => (
+        {(['list', 'metrics'] as const).map(tabOption => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabOption}
+            onClick={() => setTab(tabOption)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              tab === t
+              tab === tabOption
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
             }`}
           >
-            {t === 'list' ? 'Jugadores' : 'Métricas'}
+            {tabOption === 'list' ? t('players.tabList') : t('players.tabMetrics')}
           </button>
         ))}
       </div>
@@ -124,15 +126,15 @@ export function PlayersPage() {
       {tab === 'list' && (
         <>
           {players.length === 0 && (
-            <p className="text-center text-gray-400 py-12">No hay jugadores todavía.</p>
+            <p className="text-center text-gray-400 py-12">{t('players.empty')}</p>
           )}
 
           {players.length > 4 && (
             <div className="space-y-2">
               <input
                 type="search"
-                aria-label="Buscar jugador"
-                placeholder="Buscar jugador..."
+                aria-label={t('players.searchAriaLabel')}
+                placeholder={t('players.searchPlaceholder')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-4 py-2.5 text-sm"
@@ -148,7 +150,7 @@ export function PlayersPage() {
                         : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
                     }`}
                   >
-                    {s === 'name' ? 'A–Z' : s === 'recent' ? 'Recientes' : 'Más partidas'}
+                    {s === 'name' ? t('players.sortAZ') : s === 'recent' ? t('players.sortRecent') : t('players.sortGames')}
                   </button>
                 ))}
               </div>
@@ -156,7 +158,7 @@ export function PlayersPage() {
           )}
 
           {players.length > 0 && visiblePlayers.length === 0 && (
-            <p className="text-center text-gray-400 py-12">No se encontraron jugadores.</p>
+            <p className="text-center text-gray-400 py-12">{t('players.notFound')}</p>
           )}
 
           <div className="space-y-2">
@@ -185,7 +187,7 @@ export function PlayersPage() {
       {tab === 'metrics' && (
         <>
           {metrics.length === 0 ? (
-            <p className="text-center text-gray-400 py-12">Todavía no hay partidas jugadas.</p>
+            <p className="text-center text-gray-400 py-12">{t('players.noSessions')}</p>
           ) : (
             <>
               {/* Segmented control */}
@@ -198,7 +200,7 @@ export function PlayersPage() {
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  Ranking ELO
+                  {t('players.eloRanking')}
                 </button>
                 <button
                   onClick={() => setMetricsView('wins')}
@@ -208,14 +210,14 @@ export function PlayersPage() {
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  Victorias
+                  {t('players.wins')}
                 </button>
               </div>
 
               {metricsView === 'elo' && (
                 <>
                   <div className="flex items-center gap-1.5">
-                    <p className="text-xs text-gray-400">Puntuación basada en rival y resultado</p>
+                    <p className="text-xs text-gray-400">{t('players.eloDescription')}</p>
                     <button
                       onClick={() => setShowEloInfo(true)}
                       className="w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 text-[10px] font-bold flex items-center justify-center leading-none shrink-0"
@@ -237,7 +239,7 @@ export function PlayersPage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
                           <p className="text-xs text-gray-400 truncate">
-                            {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
+                            {t('players.sessionCount', { count: m.sessions, label: m.sessions === 1 ? t('common.session') : t('common.sessions') })}
                             {m.topGame && ` · ${m.topGame}`}
                           </p>
                         </div>
@@ -268,13 +270,13 @@ export function PlayersPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{m.player.name}</p>
                         <p className="text-xs text-gray-400 truncate">
-                          {m.sessions} {m.sessions === 1 ? 'partida' : 'partidas'}
+                          {t('players.sessionCount', { count: m.sessions, label: m.sessions === 1 ? t('common.session') : t('common.sessions') })}
                           {m.topGame && ` · ${m.topGame}`}
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.wins} vic.</p>
-                        <p className="text-xs text-gray-400">{m.winRate}% ganadas</p>
+                        <p className="score-num text-lg font-bold text-gray-900 dark:text-white">{m.wins} {t('library.statsVictories')}</p>
+                        <p className="text-xs text-gray-400">{t('players.winRate', { rate: m.winRate })}</p>
                       </div>
                     </div>
                   ))}
@@ -287,9 +289,9 @@ export function PlayersPage() {
 
       <Modal
         open={showAddModal}
-        title="Agregar jugador"
-        confirmLabel="Guardar"
-        cancelLabel="Cancelar"
+        title={t('players.addModal.title')}
+        confirmLabel={t('common.save')}
+        cancelLabel={t('common.cancel')}
         onConfirm={handleAdd}
         onCancel={handleCloseAddModal}
       >
@@ -297,8 +299,8 @@ export function PlayersPage() {
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
           type="text"
-          aria-label="Nombre del jugador"
-          placeholder="Nombre del jugador"
+          aria-label={t('players.addModal.ariaLabel')}
+          placeholder={t('players.addModal.placeholder')}
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
@@ -308,19 +310,19 @@ export function PlayersPage() {
 
       <Modal
         open={showEloInfo}
-        title="¿Qué es el ELO?"
-        confirmLabel="Entendido"
+        title={t('players.eloInfoTitle')}
+        confirmLabel={t('common.understood')}
         cancelLabel=""
         onConfirm={() => setShowEloInfo(false)}
         onCancel={() => setShowEloInfo(false)}
       >
         <div className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-          <p>El ELO es un sistema de rating que refleja el nivel competitivo de cada jugador a lo largo del tiempo.</p>
+          <p>{t('players.eloInfoBody1')}</p>
           <ul className="space-y-2">
-            <li className="flex gap-2"><span className="text-indigo-500 font-bold shrink-0">1000</span><span>es el punto de partida de todos</span></li>
-            <li className="flex gap-2"><span className="text-emerald-500 font-bold shrink-0">▲</span><span>Ganar suma puntos. Ganarle a alguien con más ELO suma más</span></li>
-            <li className="flex gap-2"><span className="text-red-400 font-bold shrink-0">▼</span><span>Perder resta puntos. Perder contra alguien con menos ELO resta más</span></li>
-            <li className="flex gap-2"><span className="text-gray-400 font-bold shrink-0">N</span><span>En partidas de más de 2 jugadores, se comparan todos contra todos</span></li>
+            <li className="flex gap-2"><span className="text-indigo-500 font-bold shrink-0">1000</span><span>{t('players.eloInfo1000')}</span></li>
+            <li className="flex gap-2"><span className="text-emerald-500 font-bold shrink-0">▲</span><span>{t('players.eloInfoUp')}</span></li>
+            <li className="flex gap-2"><span className="text-red-400 font-bold shrink-0">▼</span><span>{t('players.eloInfoDown')}</span></li>
+            <li className="flex gap-2"><span className="text-gray-400 font-bold shrink-0">N</span><span>{t('players.eloInfoN')}</span></li>
           </ul>
         </div>
       </Modal>

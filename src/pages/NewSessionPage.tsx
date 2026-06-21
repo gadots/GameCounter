@@ -22,6 +22,7 @@ import { getGameModules } from '../lib/gameLoader';
 import { useInstalledGames } from '../hooks/useInstalledGames';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSession } from '../hooks/useSession';
+import { useTranslation } from '../hooks/useTranslation';
 import { sessionsStorage, playersStorage } from '../lib/storage';
 import { resolvePlayerName } from '../lib/sessionEngine';
 import type { Player } from '../lib/types';
@@ -39,6 +40,7 @@ interface SortableItemProps {
 
 function SortablePlayerItem({ pid, index, players, animating }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pid });
+  const { t } = useTranslation();
   const p = players.find(pl => pl.id === pid);
 
   const style: React.CSSProperties = {
@@ -65,7 +67,7 @@ function SortablePlayerItem({ pid, index, players, animating }: SortableItemProp
       <span className="flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">{p?.name ?? pid}</span>
       <button
         className="touch-none text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 cursor-grab active:cursor-grabbing p-1 -mr-1"
-        aria-label={`Reordenar ${p?.name ?? 'jugador'}`}
+        aria-label={t('newSession.reorderAriaLabel', { name: p?.name ?? 'jugador' })}
         {...attributes}
         {...listeners}
         tabIndex={-1}
@@ -86,6 +88,7 @@ export function NewSessionPage() {
   const [shuffled, setShuffled] = useState(false);
   const [animating, setAnimating] = useState<'dice' | 'cards' | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { isInstalled } = useInstalledGames();
   const { players } = usePlayers();
@@ -167,20 +170,20 @@ export function NewSessionPage() {
 
     return (
       <div className="p-4 space-y-6">
-        <PageHeader title="Jugar" />
+        <PageHeader title={t('newSession.play')} />
 
         <Card className="border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20">
-          <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">Partida en curso</p>
+          <p className="text-xs font-semibold text-indigo-500 uppercase tracking-wide mb-1">{t('newSession.activeTitle')}</p>
           <p className="font-semibold text-gray-900 dark:text-white text-lg">{activeSession.game_name}</p>
           {activeSession.current_round > 1 && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ronda {activeSession.current_round}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{t('newSession.activeRound', { n: activeSession.current_round })}</p>
           )}
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{activePlayers}</p>
           <Button
             className="w-full mt-4"
             onClick={() => navigate(`/session/${activeSession.id}`)}
           >
-            Continuar partida
+            {t('newSession.activeResume')}
           </Button>
         </Card>
 
@@ -189,12 +192,12 @@ export function NewSessionPage() {
             <div className="w-full border-t border-gray-200 dark:border-gray-700" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-gray-50 dark:bg-gray-900 px-3 text-xs text-gray-400">o empezar una nueva</span>
+            <span className="bg-gray-50 dark:bg-gray-900 px-3 text-xs text-gray-400">{t('newSession.activeOr')}</span>
           </div>
         </div>
 
         <Button variant="secondary" className="w-full" onClick={() => setSelectedGame('__pick__')}>
-          Nueva partida
+          {t('newSession.newGame')}
         </Button>
       </div>
     );
@@ -203,7 +206,7 @@ export function NewSessionPage() {
   return (
     <>
       <div className="p-4 space-y-6">
-        <PageHeader title="Nueva partida" />
+        <PageHeader title={t('newSession.title')} />
 
         {!selectedGame && (() => {
           const allPlayers = playersStorage.getAll();
@@ -217,7 +220,7 @@ export function NewSessionPage() {
           const winnerName = winnerId ? resolvePlayerName(winnerId, allPlayers, last) : null;
           return (
             <section>
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Última partida</h2>
+              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{t('newSession.lastSession')}</h2>
               <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
                 <div className="h-1 w-full" style={{ backgroundColor: winnerColor }} />
                 <div className="flex items-center gap-3 p-4">
@@ -232,7 +235,7 @@ export function NewSessionPage() {
                     className="shrink-0 px-3 py-1.5 rounded-xl text-sm font-semibold bg-indigo-600 text-white active:bg-indigo-700"
                     onClick={() => navigate(`/session/new?game=${last.game_id}&players=${last.player_ids.join(',')}`)}
                   >
-                    Revancha
+                    {t('newSession.rematch')}
                   </button>
                 </div>
               </div>
@@ -241,9 +244,9 @@ export function NewSessionPage() {
         })()}
 
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Juego</h2>
+          <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('newSession.sectionGame')}</h2>
           {installedModules.length === 0 && (
-            <p className="text-gray-400 text-sm">No tenés juegos instalados. Instalá uno desde la Librería.</p>
+            <p className="text-gray-400 text-sm">{t('newSession.noGamesInstalled')}</p>
           )}
           <div className="space-y-2">
             {installedModules.map(m => (
@@ -254,8 +257,8 @@ export function NewSessionPage() {
               >
                 <p className="font-medium text-gray-800 dark:text-gray-100">{m.metadata.name}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {m.metadata.min_players}–{m.metadata.max_players} jugadores
-                  {m.metadata.scoring_mode === 'per_round' && ` · ${m.metadata.total_rounds} rondas`}
+                  {m.metadata.min_players}–{m.metadata.max_players} {t('common.players')}
+                  {m.metadata.scoring_mode === 'per_round' && ` · ${m.metadata.total_rounds} ${t('common.rounds')}`}
                 </p>
               </Card>
             ))}
@@ -265,10 +268,10 @@ export function NewSessionPage() {
         {selectedModule && (
           <section className="space-y-2">
             <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-              Jugadores ({selectedPlayers.length}/{selectedModule.metadata.max_players})
+              {t('newSession.sectionPlayers', { count: selectedPlayers.length, max: selectedModule.metadata.max_players })}
             </h2>
             {players.length === 0 && (
-              <p className="text-gray-400 text-sm">Agregá jugadores en la sección Jugadores.</p>
+              <p className="text-gray-400 text-sm">{t('newSession.noPlayersAdded')}</p>
             )}
             <div className="space-y-2">
               {players.map(p => {
@@ -293,7 +296,7 @@ export function NewSessionPage() {
             </div>
             {selectedPlayers.length > 0 && !canStart && (
               <p className="text-xs text-amber-500">
-                Necesitás {selectedModule.metadata.min_players}–{selectedModule.metadata.max_players} jugadores.
+                {t('newSession.playerCountHint', { min: selectedModule.metadata.min_players, max: selectedModule.metadata.max_players })}
               </p>
             )}
           </section>
@@ -318,18 +321,18 @@ export function NewSessionPage() {
             `}</style>
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                Orden de turno
+                {t('newSession.sectionOrder')}
               </h2>
               <button
                 onClick={handleShuffle}
                 disabled={!!animating}
-                aria-label="Ordenar jugadores al azar"
+                aria-label={t('newSession.shuffle')}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 transition-opacity disabled:opacity-50"
               >
                 <span style={animating === 'dice' ? { display: 'inline-block', animation: 'dice-spin 0.65s ease-in-out' } : {}}>
                   🎲
                 </span>
-                {shuffled ? '↺ Mezclar de nuevo' : 'Orden aleatorio'}
+                {shuffled ? t('newSession.reshuf') : t('newSession.shuffle')}
               </button>
             </div>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -347,12 +350,12 @@ export function NewSessionPage() {
                 </div>
               </SortableContext>
             </DndContext>
-            <p className="text-xs text-gray-400 text-center pt-0.5">Arrastrá las filas para cambiar el orden</p>
+            <p className="text-xs text-gray-400 text-center pt-0.5">{t('newSession.dragHint')}</p>
           </section>
         )}
 
         <Button className="w-full" disabled={!canStart} onClick={handleStart} size="lg">
-          Empezar partida
+          {t('newSession.start')}
         </Button>
 
         {activeSession && (
@@ -360,17 +363,17 @@ export function NewSessionPage() {
             className="w-full text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 py-1"
             onClick={() => navigate(`/session/${activeSession.id}`)}
           >
-            ← Volver a partida en curso ({activeSession.game_name})
+            {t('newSession.backToActive', { game: activeSession.game_name })}
           </button>
         )}
       </div>
 
       <Modal
         open={showAbandonModal}
-        title="¿Abandonar la partida en curso?"
-        description={`Hay una partida de ${activeSession?.game_name} en progreso. Si empezás una nueva, la anterior se perderá.`}
-        confirmLabel="Abandonar y empezar nueva"
-        cancelLabel="Cancelar"
+        title={t('newSession.abandonTitle')}
+        description={t('newSession.abandonDesc', { game: activeSession?.game_name ?? '' })}
+        confirmLabel={t('newSession.abandonConfirm')}
+        cancelLabel={t('common.cancel')}
         confirmVariant="danger"
         onConfirm={() => { setShowAbandonModal(false); startNewSession(); }}
         onCancel={() => setShowAbandonModal(false)}

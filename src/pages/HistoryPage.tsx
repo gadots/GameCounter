@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSessions } from '../hooks/useSession';
 import { resolvePlayerName } from '../lib/sessionEngine';
+import { useTranslation } from '../hooks/useTranslation';
 import { HistoryFilters, type FilterState } from '../components/HistoryFilters';
 import { PageHeader } from '../components/layout/PageHeader';
 import type { Session, Player } from '../lib/types';
@@ -16,6 +17,7 @@ function winnerColor(session: Session, players: Player[]): string {
 export function HistoryPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [filters, setFilters] = useState<FilterState>({
     player: searchParams.get('player') ?? '',
@@ -53,7 +55,7 @@ export function HistoryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title="Historial" />
+      <PageHeader title={t('history.title')} />
 
       <HistoryFilters
         players={players}
@@ -63,7 +65,7 @@ export function HistoryPage() {
       />
 
       {filtered.length === 0 && (
-        <p className="text-center text-gray-400 py-12">No hay partidas completadas.</p>
+        <p className="text-center text-gray-400 py-12">{t('history.noSessions')}</p>
       )}
 
       <div className="space-y-3">
@@ -85,7 +87,7 @@ export function HistoryPage() {
                 <p className="font-semibold text-gray-900 dark:text-gray-100">{session.game_name}</p>
                 <p className="text-xs text-gray-400 mt-0.5">
                   {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  {totalRounds > 1 && ` · ${totalRounds} rondas`}
+                  {totalRounds > 1 && ` · ${t('history.rounds', { count: totalRounds })}`}
                 </p>
 
                 {/* Player chips */}

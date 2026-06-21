@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/ui/Card';
 import type { Session } from '../lib/types';
 
@@ -16,6 +17,7 @@ function computeTotals(session: Session) {
 
 export function SharePage() {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -48,13 +50,13 @@ export function SharePage() {
   }, [id]);
 
   if (!supabase) {
-    return <div className="p-4 text-gray-400">Sharing no configurado.</div>;
+    return <div className="p-4 text-gray-400">{t('share.noConfig')}</div>;
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-400">Conectando...</p>
+        <p className="text-gray-400">{t('share.connecting')}</p>
       </div>
     );
   }
@@ -62,7 +64,7 @@ export function SharePage() {
   if (!session) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-400">Partida no encontrada.</p>
+        <p className="text-gray-400">{t('share.notFound')}</p>
       </div>
     );
   }
@@ -77,8 +79,10 @@ export function SharePage() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{session.game_name}</h1>
           <p className="text-sm text-gray-400 mt-1">
             {isCompleted
-              ? 'Partida terminada'
-              : `Ronda ${session.current_round}${session.scores.length === 0 ? ' — esperando primera ronda...' : ''}`
+              ? t('share.completed')
+              : session.scores.length === 0
+                ? t('share.waitingFirstRound', { n: session.current_round })
+                : t('share.roundN', { n: session.current_round })
             }
           </p>
         </div>
@@ -87,26 +91,26 @@ export function SharePage() {
           <div className="text-center py-2">
             <div className="text-4xl mb-2">🏆</div>
             <p className="font-bold text-gray-900 dark:text-white text-lg">
-              {totals.filter(t => t.isWinner).map(t => session.player_name_snapshots?.[t.player_id] ?? t.player_id).join(', ')}
+              {totals.filter(tot => tot.isWinner).map(tot => session.player_name_snapshots?.[tot.player_id] ?? tot.player_id).join(', ')}
             </p>
           </div>
         )}
 
         <Card>
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Marcador</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('share.scoreboard')}</p>
           <div className="space-y-3">
-            {totals.map((t, i) => {
-              const name = session.player_name_snapshots?.[t.player_id] ?? t.player_id;
+            {totals.map((tot, i) => {
+              const name = session.player_name_snapshots?.[tot.player_id] ?? tot.player_id;
               return (
                 <div
-                  key={t.player_id}
-                  className={`flex items-center gap-3 ${isCompleted && t.isWinner ? 'font-bold' : ''}`}
+                  key={tot.player_id}
+                  className={`flex items-center gap-3 ${isCompleted && tot.isWinner ? 'font-bold' : ''}`}
                 >
                   <span className="text-gray-400 text-sm w-4 shrink-0">{i + 1}</span>
                   <span className="flex-1 text-gray-800 dark:text-gray-100 truncate">{name}</span>
-                  {isCompleted && t.isWinner && <span>🏆</span>}
-                  <span className={`text-lg font-bold shrink-0 ${t.grand_total < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-                    {t.grand_total}
+                  {isCompleted && tot.isWinner && <span>🏆</span>}
+                  <span className={`text-lg font-bold shrink-0 ${tot.grand_total < 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+                    {tot.grand_total}
                   </span>
                 </div>
               );
@@ -115,7 +119,7 @@ export function SharePage() {
         </Card>
 
         <p className="text-xs text-center text-gray-400 py-2">
-          {isCompleted ? 'Resultado final' : '🔴 En vivo · se actualiza automáticamente'}
+          {isCompleted ? t('share.finalResult') : t('share.liveUpdate')}
         </p>
       </div>
     </div>

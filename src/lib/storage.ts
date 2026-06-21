@@ -165,6 +165,7 @@ export const customGamesStorage = {
 const defaultSettings: AppSettings = {
   theme: 'system',
   show_running_totals: true,
+  language: 'es',
 };
 
 export const settingsStorage = {

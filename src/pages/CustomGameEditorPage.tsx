@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Trash2, Plus, GripVertical } from 'lucide-react';
 import { customGamesStorage, installedGamesStorage } from '../lib/storage';
 import { useCustomGames } from '../hooks/useCustomGames';
+import { useTranslation } from '../hooks/useTranslation';
 import type { CustomGameDef, ScoringRule, ScoringMode } from '../lib/types';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -64,33 +65,17 @@ function defToForm(def: CustomGameDef): FormState {
     scoring_mode: def.scoring_mode,
     has_target: def.target_score != null,
     target_score: def.target_score?.toString() ?? '',
-    inputs: def.inputs.map((inp, _i) => ({
+    inputs: def.inputs.map((_inp, _i) => ({
       _key: makeKey(),
-      id: inp.id,
-      label: inp.label,
-      type: inp.type as InputType,
-      min: inp.min?.toString() ?? '',
-      max: inp.max?.toString() ?? '',
-      description: inp.description ?? '',
-      multiplier: (def.scoring_rules.find(r => r.input_id === inp.id)?.multiplier ?? 1).toString(),
+      id: _inp.id,
+      label: _inp.label,
+      type: _inp.type as InputType,
+      min: _inp.min?.toString() ?? '',
+      max: _inp.max?.toString() ?? '',
+      description: _inp.description ?? '',
+      multiplier: (def.scoring_rules.find(r => r.input_id === _inp.id)?.multiplier ?? 1).toString(),
     })),
   };
-}
-
-function validate(form: FormState): string | null {
-  if (!form.name.trim()) return 'El nombre del juego es obligatorio.';
-  if (form.min_players < 1) return 'Mínimo 1 jugador.';
-  if (form.max_players < form.min_players) return 'Máximo debe ser ≥ mínimo.';
-  if (form.inputs.length === 0) return 'Necesitás al menos un campo de puntuación.';
-  const ids = new Set<string>();
-  for (const row of form.inputs) {
-    if (!row.label.trim()) return 'Todos los campos deben tener una etiqueta.';
-    const id = row.id.trim() || slugify(row.label);
-    if (!id) return 'No se puede generar un ID para un campo.';
-    if (ids.has(id)) return `ID duplicado: "${id}". Cambiá el nombre de uno de los campos.`;
-    ids.add(id);
-  }
-  return null;
 }
 
 function formToDef(form: FormState, existingId?: string): CustomGameDef {
@@ -131,6 +116,7 @@ export function CustomGameEditorPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const { saveGame } = useCustomGames();
+  const { t } = useTranslation();
   const isEdit = !!id;
 
   const [form, setForm] = useState<FormState>(defaultForm);
@@ -161,6 +147,22 @@ export function CustomGameEditorPage() {
     updateRow(key, { label, ...(autoId ? { id: slugify(label) } : {}) });
   };
 
+  const validate = (f: FormState): string | null => {
+    if (!f.name.trim()) return t('editor.errorName');
+    if (f.min_players < 1) return t('editor.errorMinPlayers');
+    if (f.max_players < f.min_players) return t('editor.errorMaxPlayers');
+    if (f.inputs.length === 0) return t('editor.errorNoFields');
+    const ids = new Set<string>();
+    for (const row of f.inputs) {
+      if (!row.label.trim()) return t('editor.errorNoLabel');
+      const rowId = row.id.trim() || slugify(row.label);
+      if (!rowId) return t('editor.errorNoId');
+      if (ids.has(rowId)) return t('editor.errorDuplicateId', { id: rowId });
+      ids.add(rowId);
+    }
+    return null;
+  };
+
   const handleSave = () => {
     const err = validate(form);
     if (err) { setError(err); return; }
@@ -180,31 +182,31 @@ export function CustomGameEditorPage() {
 
   const multiplierHint = (type: InputType) =>
     type === 'toggle'
-      ? 'Puntos si está activo'
-      : 'Multiplicador (puede ser negativo para penalizaciones)';
+      ? t('editor.inputMultiplierHintToggle')
+      : t('editor.inputMultiplierHint');
 
   return (
     <div className="p-4 space-y-4 pb-10">
-      <PageHeader title={isEdit ? 'Editar juego' : 'Nuevo juego'} backPath="/library" />
+      <PageHeader title={isEdit ? t('editor.titleEdit') : t('editor.titleNew')} backPath="/library" />
 
       {/* Metadata */}
       <Card className="space-y-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase">Datos del juego</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase">{t('editor.sectionMeta')}</p>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Nombre</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('editor.name')}</label>
           <input
             type="text"
             value={form.name}
             onChange={e => setField('name', e.target.value)}
-            placeholder="Mi juego de mesa"
+            placeholder={t('editor.namePlaceholder')}
             className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-3 py-2 text-sm"
           />
         </div>
 
         <div className="flex gap-3">
           <div className="flex-1 space-y-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Mín. jugadores</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('editor.minPlayers')}</label>
             <input
               type="number"
               min={1} max={20}
@@ -214,7 +216,7 @@ export function CustomGameEditorPage() {
             />
           </div>
           <div className="flex-1 space-y-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Máx. jugadores</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('editor.maxPlayers')}</label>
             <input
               type="number"
               min={1} max={20}
@@ -226,7 +228,7 @@ export function CustomGameEditorPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Modo de puntuación</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('editor.scoringMode')}</label>
           <div className="flex gap-2">
             {(['end_of_game', 'per_round'] as const).map(mode => (
               <button
@@ -238,7 +240,7 @@ export function CustomGameEditorPage() {
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                 }`}
               >
-                {mode === 'end_of_game' ? 'Al final' : 'Por ronda'}
+                {mode === 'end_of_game' ? t('editor.modeEndOfGame') : t('editor.modePerRound')}
               </button>
             ))}
           </div>
@@ -253,14 +255,14 @@ export function CustomGameEditorPage() {
           >
             <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${form.has_target ? 'translate-x-6' : 'translate-x-1'}`} />
           </button>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">Puntaje objetivo</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('editor.targetScore')}</label>
           {form.has_target && (
             <input
               type="number"
               min={1}
               value={form.target_score}
               onChange={e => setField('target_score', e.target.value)}
-              placeholder="ej: 100"
+              placeholder={t('editor.targetPlaceholder')}
               className="w-24 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-3 py-1.5 text-sm text-center"
             />
           )}
@@ -269,8 +271,8 @@ export function CustomGameEditorPage() {
 
       {/* Inputs */}
       <Card className="space-y-3">
-        <p className="text-xs font-semibold text-gray-400 uppercase">Campos de puntuación</p>
-        <p className="text-xs text-gray-400">El puntaje final es la suma de (valor × multiplicador) para cada campo.</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase">{t('editor.sectionInputs')}</p>
+        <p className="text-xs text-gray-400">{t('editor.inputsDescription')}</p>
 
         <div className="space-y-3">
           {form.inputs.map((row, idx) => (
@@ -280,7 +282,7 @@ export function CustomGameEditorPage() {
                 <span className="text-xs font-semibold text-gray-400 w-5">{idx + 1}</span>
                 <input
                   type="text"
-                  placeholder="Etiqueta (ej: Puntos de ciudad)"
+                  placeholder={t('editor.inputLabelPlaceholder')}
                   value={row.label}
                   onChange={e => handleLabelChange(row._key, e.target.value)}
                   className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2.5 py-1.5 text-sm"
@@ -289,7 +291,7 @@ export function CustomGameEditorPage() {
                   onClick={() => removeRow(row._key)}
                   disabled={form.inputs.length === 1}
                   className="p-1.5 text-gray-400 hover:text-red-400 disabled:opacity-30 transition-colors"
-                  aria-label="Eliminar campo"
+                  aria-label={t('editor.inputRemoveAriaLabel')}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -297,15 +299,15 @@ export function CustomGameEditorPage() {
 
               <div className="flex gap-2 pl-7">
                 <div className="flex-1 space-y-0.5">
-                  <p className="text-xs text-gray-400">Tipo</p>
+                  <p className="text-xs text-gray-400">{t('editor.inputTypeLabel')}</p>
                   <select
                     value={row.type}
                     onChange={e => updateRow(row._key, { type: e.target.value as InputType })}
                     className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2 py-1.5 text-sm"
                   >
-                    <option value="number">Número libre</option>
-                    <option value="stepper">Contador +/−</option>
-                    <option value="toggle">Sí / No</option>
+                    <option value="number">{t('editor.inputTypeNumber')}</option>
+                    <option value="stepper">{t('editor.inputTypeStepper')}</option>
+                    <option value="toggle">{t('editor.inputTypeToggle')}</option>
                   </select>
                 </div>
                 <div className="w-24 space-y-0.5">
@@ -322,7 +324,7 @@ export function CustomGameEditorPage() {
               {row.type !== 'toggle' && (
                 <div className="flex gap-2 pl-7">
                   <div className="flex-1 space-y-0.5">
-                    <p className="text-xs text-gray-400">Mínimo (opcional)</p>
+                    <p className="text-xs text-gray-400">{t('editor.inputMinLabel')}</p>
                     <input
                       type="number"
                       value={row.min}
@@ -332,7 +334,7 @@ export function CustomGameEditorPage() {
                     />
                   </div>
                   <div className="flex-1 space-y-0.5">
-                    <p className="text-xs text-gray-400">Máximo (opcional)</p>
+                    <p className="text-xs text-gray-400">{t('editor.inputMaxLabel')}</p>
                     <input
                       type="number"
                       value={row.max}
@@ -347,7 +349,7 @@ export function CustomGameEditorPage() {
               <div className="pl-7">
                 <input
                   type="text"
-                  placeholder="Descripción (opcional)"
+                  placeholder={t('editor.inputDescriptionPlaceholder')}
                   value={row.description}
                   onChange={e => updateRow(row._key, { description: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-2.5 py-1.5 text-sm text-gray-500 dark:text-gray-400"
@@ -362,7 +364,7 @@ export function CustomGameEditorPage() {
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
         >
           <Plus size={16} />
-          Agregar campo
+          {t('editor.addField')}
         </button>
       </Card>
 
@@ -371,7 +373,7 @@ export function CustomGameEditorPage() {
       )}
 
       <Button className="w-full" size="lg" onClick={handleSave}>
-        {isEdit ? 'Guardar cambios' : 'Crear juego'}
+        {isEdit ? t('editor.saveEdit') : t('editor.saveNew')}
       </Button>
 
       {isEdit && (
@@ -379,15 +381,15 @@ export function CustomGameEditorPage() {
           onClick={() => setConfirmDelete(true)}
           className="w-full text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300 py-1 transition-colors"
         >
-          Eliminar juego
+          {t('editor.deleteGame')}
         </button>
       )}
 
       <Modal
         open={confirmDelete}
-        title="¿Eliminar juego?"
-        description="El juego se eliminará de la librería. Las partidas jugadas se conservan en el historial."
-        confirmLabel="Sí, eliminar"
+        title={t('editor.deleteTitle')}
+        description={t('editor.deleteDesc')}
+        confirmLabel={t('editor.deleteConfirm')}
         confirmVariant="danger"
         onConfirm={handleDelete}
         onCancel={() => setConfirmDelete(false)}

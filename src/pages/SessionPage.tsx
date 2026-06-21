@@ -3,6 +3,7 @@ import { useParams, useNavigate, useBlocker } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSettings } from '../hooks/useSettings';
+import { useTranslation } from '../hooks/useTranslation';
 import { getGameModule } from '../lib/gameLoader';
 import { computePlayerTotals, withWinners, resolvePlayerName, isTargetReached } from '../lib/sessionEngine';
 import { InputRenderer } from '../components/ui/InputRenderer';
@@ -21,6 +22,7 @@ export function SessionPage() {
   const { session, submitRound, endSession, undoLastRound, enterFinalBonus } = useSession(id ?? null);
   const { players } = usePlayers();
   const { settings } = useSettings();
+  const { t } = useTranslation();
 
   const module = session ? getGameModule(session.game_id) : null;
 
@@ -45,42 +47,42 @@ export function SessionPage() {
   );
 
   if (!session || !module) {
-    return <div className="p-4 text-gray-400">Sesión no encontrada.</div>;
+    return <div className="p-4 text-gray-400">{t('session.notFound')}</div>;
   }
 
   if (session.status === 'completed') {
     const totals = withWinners(computePlayerTotals(session, module));
     const winners = totals.filter(t => t.is_winner);
-    const winnerNames = winners.map(t => resolvePlayerName(t.player_id, players, session)).join(', ');
+    const winnerNames = winners.map(tot => resolvePlayerName(tot.player_id, players, session)).join(', ');
 
     return (
       <div className="p-4 space-y-6">
         <div className="text-center py-6">
           <div className="text-5xl mb-3">🏆</div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {winners.length === 1 ? `¡Ganó ${winnerNames}!` : `¡Empate! ${winnerNames}`}
+            {winners.length === 1 ? t('session.winnerSingle', { name: winnerNames }) : t('session.winnerTie', { names: winnerNames })}
           </h2>
           <p className="text-gray-400 mt-1">{session.game_name}</p>
         </div>
 
         <div className="space-y-1">
-          {totals.sort((a, b) => b.grand_total - a.grand_total).map((t, rank) => {
-            const player = players.find(p => p.id === t.player_id);
+          {totals.sort((a, b) => b.grand_total - a.grand_total).map((tot, rank) => {
+            const player = players.find(p => p.id === tot.player_id);
             const color = player?.color ?? '#6366f1';
             return (
               <div
-                key={t.player_id}
-                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all border-l-[3px] ${t.is_winner ? '' : 'border-transparent'}`}
-                style={t.is_winner ? { borderLeftColor: color, backgroundColor: color + '22' } : {}}
+                key={tot.player_id}
+                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all border-l-[3px] ${tot.is_winner ? '' : 'border-transparent'}`}
+                style={tot.is_winner ? { borderLeftColor: color, backgroundColor: color + '22' } : {}}
               >
                 <span className="text-sm text-gray-400 w-4 shrink-0">{rank + 1}</span>
                 <div className="w-9 h-9 rounded-full flex items-center justify-center text-lg shrink-0" style={{ backgroundColor: color + '44' }}>
                   {player?.avatar_emoji ?? '🎲'}
                 </div>
-                <p className="flex-1 font-medium text-gray-800 dark:text-gray-100">{resolvePlayerName(t.player_id, players, session)}</p>
-                {t.is_winner && <span className="text-base">🏆</span>}
+                <p className="flex-1 font-medium text-gray-800 dark:text-gray-100">{resolvePlayerName(tot.player_id, players, session)}</p>
+                {tot.is_winner && <span className="text-base">🏆</span>}
                 <span className="score-num text-2xl font-bold text-gray-900 dark:text-white">
-                  {t.grand_total}
+                  {tot.grand_total}
                 </span>
               </div>
             );
@@ -88,10 +90,10 @@ export function SessionPage() {
         </div>
 
         <Button className="w-full" variant="secondary" onClick={() => navigate('/history')}>
-          Ver historial
+          {t('session.viewHistory')}
         </Button>
         <Button className="w-full" onClick={() => navigate('/session/new')}>
-          Nueva partida
+          {t('session.newSession')}
         </Button>
       </div>
     );
@@ -189,7 +191,9 @@ export function SessionPage() {
               <p className="text-sm font-medium text-indigo-500 dark:text-indigo-400">{finalBonusLabel}</p>
             ) : module.metadata.scoring_mode === 'per_round' && (
               <p className="text-sm text-gray-400">
-                Ronda {session.current_round}{module.metadata.total_rounds ? ` de ${module.metadata.total_rounds}` : ''}
+                {module.metadata.total_rounds
+                  ? t('session.roundNOfTotal', { n: session.current_round, total: module.metadata.total_rounds })
+                  : t('session.roundN', { n: session.current_round })}
               </p>
             )}
           </div>
@@ -204,22 +208,22 @@ export function SessionPage() {
                 }`}
               >
                 {shareCopied ? <Check size={14} /> : <Share2 size={14} />}
-                <span>{shareCopied ? 'Copiado' : sharing ? 'En vivo' : 'Compartir'}</span>
+                <span>{shareCopied ? t('session.copied') : sharing ? t('session.live') : t('session.share')}</span>
               </button>
             )}
             {module.metadata.scoring_mode === 'end_of_game' && (
               <Button variant="ghost" size="sm" onClick={endSession}>
-                Terminar
+                {t('session.end')}
               </Button>
             )}
             {module.metadata.scoring_mode === 'per_round' && module.final_round && !module.metadata.total_rounds && !isFinalBonus && (
               <Button variant="ghost" size="sm" onClick={enterFinalBonus}>
-                Ir a bonus final
+                {t('session.goToBonus')}
               </Button>
             )}
             {module.metadata.scoring_mode === 'per_round' && !module.metadata.total_rounds && !module.metadata.target_score && !module.final_round && (
               <Button variant="ghost" size="sm" onClick={endSession}>
-                Terminar
+                {t('session.end')}
               </Button>
             )}
           </div>
@@ -235,7 +239,7 @@ export function SessionPage() {
                 <button
                   key={pid}
                   onClick={() => setActivePlayer(i)}
-                  aria-label={`Seleccionar a ${p?.name ?? 'Jugador'}`}
+                  aria-label={t('session.selectPlayer', { name: p?.name ?? 'Jugador' })}
                   aria-pressed={isActive}
                   style={isActive ? { backgroundColor: color } : {}}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-all ${
@@ -266,7 +270,7 @@ export function SessionPage() {
                   );
                 })}
               </div>
-              <p className="font-semibold text-gray-800 dark:text-gray-100">Todos los jugadores</p>
+              <p className="font-semibold text-gray-800 dark:text-gray-100">{t('session.allPlayers')}</p>
             </div>
           ) : (
             <div className="flex items-center gap-2 mb-4">
@@ -279,7 +283,7 @@ export function SessionPage() {
           <InputRenderer
             inputs={activeInputs}
             values={currentValues}
-            onChange={(id, val) => setValues({ ...currentValues, [id]: val })}
+            onChange={(inputId, val) => setValues({ ...currentValues, [inputId]: val })}
             takenBy={Object.keys(takenBy).length > 0 ? takenBy : undefined}
           />
           {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
@@ -287,17 +291,17 @@ export function SessionPage() {
 
         <Button className="w-full" size="lg" onClick={handleSubmit}>
           {isLastPlayer
-            ? (isFinalBonus || module.metadata.scoring_mode === 'end_of_game' ? 'Calcular ganador' : 'Registrar ronda')
-            : `Siguiente: ${players.find(p => p.id === session.player_ids[activePlayer + 1])?.name ?? '...'}`}
+            ? (isFinalBonus || module.metadata.scoring_mode === 'end_of_game' ? t('session.calcWinner') : t('session.registerRound'))
+            : t('session.nextPlayer', { name: players.find(p => p.id === session.player_ids[activePlayer + 1])?.name ?? '...' })}
         </Button>
 
         {isFinalBonus ? (
           <Button variant="secondary" className="w-full" onClick={handleUndoRound}>
-            ← Cancelar bonificación
+            {t('session.cancelBonus')}
           </Button>
         ) : module.metadata.scoring_mode === 'per_round' && session.current_round > 1 && (
           <Button variant="secondary" className="w-full" onClick={handleUndoRound}>
-            ← Editar ronda {session.current_round - 1}
+            {t('session.editRound', { n: session.current_round - 1 })}
           </Button>
         )}
 
@@ -309,10 +313,10 @@ export function SessionPage() {
       {/* Navigation blocker modal */}
       <Modal
         open={blocker.state === 'blocked'}
-        title="¿Salir de la partida?"
-        description="La partida queda guardada. Podés retomar desde donde la dejaste."
-        confirmLabel="Salir"
-        cancelLabel="Seguir jugando"
+        title={t('session.leaveTitle')}
+        description={t('session.leaveDesc')}
+        confirmLabel={t('session.leave')}
+        cancelLabel={t('session.keepPlaying')}
         confirmVariant="danger"
         onConfirm={() => { exitingRef.current = true; blocker.reset?.(); navigate('/session/new'); }}
         onCancel={() => blocker.reset?.()}
@@ -322,18 +326,19 @@ export function SessionPage() {
 }
 
 function ScoreTable({ session, module, players }: { session: Session; module: GameModule; players: Player[] }) {
+  const { t } = useTranslation();
   const totals = computePlayerTotals(session, module).sort((a, b) => b.grand_total - a.grand_total);
   const leader = totals[0];
   return (
     <Card>
-      <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Puntajes acumulados</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('session.runningTotals')}</p>
       <div className="space-y-2">
-        {totals.map((t, rank) => {
-          const p = players.find(pl => pl.id === t.player_id);
+        {totals.map((tot, rank) => {
+          const p = players.find(pl => pl.id === tot.player_id);
           const color = p?.color ?? '#6366f1';
-          const isLeader = t.player_id === leader?.player_id && totals.length > 1;
+          const isLeader = tot.player_id === leader?.player_id && totals.length > 1;
           return (
-            <div key={t.player_id} className="flex items-center gap-3">
+            <div key={tot.player_id} className="flex items-center gap-3">
               <div
                 className="w-7 h-7 rounded-full flex items-center justify-center text-sm shrink-0"
                 style={{ backgroundColor: color + '44' }}
@@ -344,8 +349,8 @@ function ScoreTable({ session, module, players }: { session: Session; module: Ga
               {isLeader && rank === 0 && (
                 <span className="text-xs">👑</span>
               )}
-              <span className={`score-num text-2xl font-bold ${t.grand_total < 0 ? 'text-red-400 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                {t.grand_total}
+              <span className={`score-num text-2xl font-bold ${tot.grand_total < 0 ? 'text-red-400 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                {tot.grand_total}
               </span>
             </div>
           );

@@ -6,6 +6,7 @@ import { useCustomGames } from '../hooks/useCustomGames';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSessions } from '../hooks/useSession';
 import { computeGameRecords } from '../lib/sessionEngine';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Star, Pencil, Plus, Settings } from 'lucide-react';
@@ -18,6 +19,7 @@ export function LibraryPage() {
   const { installed, install, uninstall, isInstalled, toggleFavorite } = useInstalledGames();
   const { customGames, isCustomGame } = useCustomGames();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // Re-derive modules whenever custom games change so the list stays reactive
   const allModules = useMemo(() => getGameModules(), [customGames]);
@@ -27,7 +29,7 @@ export function LibraryPage() {
   // Collect tags that appear in 2+ games, sorted by frequency
   const availableTags = useMemo(() => {
     const freq: Record<string, number> = {};
-    allModules.forEach(m => (m.metadata.tags ?? []).forEach(t => { freq[t] = (freq[t] ?? 0) + 1; }));
+    allModules.forEach(m => (m.metadata.tags ?? []).forEach(tag => { freq[tag] = (freq[tag] ?? 0) + 1; }));
     return Object.entries(freq)
       .filter(([, count]) => count >= 2)
       .sort((a, b) => b[1] - a[1])
@@ -42,7 +44,7 @@ export function LibraryPage() {
 
   const matchesSearch = (name: string) => name.toLowerCase().includes(search.toLowerCase());
   const matchesTags = (tags: string[] = []) =>
-    selectedTags.size === 0 || tags.some(t => selectedTags.has(t));
+    selectedTags.size === 0 || tags.some(tag => selectedTags.has(tag));
   const matchesFilters = (m: ReturnType<typeof getGameModules>[number]) =>
     matchesSearch(m.metadata.name) && matchesTags(m.metadata.tags);
 
@@ -73,14 +75,14 @@ export function LibraryPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <PageHeader title="Librería de juegos" showSettings={false} />
+        <PageHeader title={t('library.title')} showSettings={false} />
         <Button size="sm" variant="secondary" onClick={() => navigate('/games/new')} className="shrink-0 flex items-center gap-1">
-          <Plus size={14} /> Crear juego
+          <Plus size={14} /> {t('library.createGame')}
         </Button>
         <button
           onClick={() => navigate('/settings')}
           className="p-2 -mr-2 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
-          aria-label="Ajustes"
+          aria-label={t('common.settings')}
         >
           <Settings size={20} />
         </button>
@@ -91,19 +93,19 @@ export function LibraryPage() {
           onClick={() => setTab('installed')}
           className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${tab === 'installed' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
         >
-          Librería ({countInstalled})
+          {t('library.tabInstalled', { count: countInstalled })}
         </button>
         <button
           onClick={() => setTab('all')}
           className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${tab === 'all' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
         >
-          Todos ({countAll})
+          {t('library.tabAll', { count: countAll })}
         </button>
         <button
           onClick={() => setTab('stats')}
           className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${tab === 'stats' ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}
         >
-          Métricas
+          {t('library.tabStats')}
         </button>
       </div>
 
@@ -111,7 +113,7 @@ export function LibraryPage() {
         <div className="space-y-2">
           <input
             type="search"
-            placeholder="Buscar juego..."
+            placeholder={t('library.searchPlaceholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-4 py-2.5 text-sm"
@@ -135,7 +137,7 @@ export function LibraryPage() {
                 onClick={() => setSelectedTags(new Set())}
                 className="px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap shrink-0 text-indigo-500 dark:text-indigo-400 hover:text-indigo-700"
               >
-                Limpiar ×
+                {t('library.clearFilters')}
               </button>
             )}
           </div>
@@ -145,7 +147,7 @@ export function LibraryPage() {
       {tab !== 'stats' && (
         <>
           {filtered.length === 0 && (
-            <p className="text-center text-gray-400 py-12">No hay juegos que coincidan.</p>
+            <p className="text-center text-gray-400 py-12">{t('library.noGamesMatch')}</p>
           )}
           <div className="space-y-3">
             {filtered.map(m => {
@@ -158,13 +160,14 @@ export function LibraryPage() {
                       {isCustomGame(m.metadata.id) && (
                         <span className="shrink-0 inline-flex items-center gap-0.5 text-xs bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 rounded-full px-2 py-0.5 font-semibold border border-violet-200 dark:border-violet-700/50">
                           <Pencil size={10} strokeWidth={2.5} />
-                          propio
+                          {t('library.customBadge')}
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {m.metadata.min_players}–{m.metadata.max_players} jugadores
-                      {m.metadata.scoring_mode === 'per_round' && ` · ${m.metadata.total_rounds} rondas`}
+                      {m.metadata.scoring_mode === 'per_round'
+                        ? t('library.playerRangeRounds', { min: m.metadata.min_players, max: m.metadata.max_players, rounds: m.metadata.total_rounds ?? '' })
+                        : t('library.playerRange', { min: m.metadata.min_players, max: m.metadata.max_players })}
                     </p>
                     {m.metadata.tags && (
                       <div className="flex gap-1 mt-1.5 flex-wrap">
@@ -178,7 +181,7 @@ export function LibraryPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {inst && (
-                      <button onClick={() => toggleFavorite(m.metadata.id)} className="p-1.5 transition-colors" aria-label="Favorito">
+                      <button onClick={() => toggleFavorite(m.metadata.id)} className="p-1.5 transition-colors" aria-label={t('library.favorite')}>
                         {installed.find(g => g.game_id === m.metadata.id)?.is_favorite
                           ? <Star size={18} className="text-indigo-500" fill="currentColor" />
                           : <Star size={18} className="text-gray-300 dark:text-gray-600" />
@@ -188,17 +191,17 @@ export function LibraryPage() {
                     <div className="flex flex-col gap-2">
                       {inst ? (
                         <>
-                          <Button size="sm" onClick={() => navigate(`/session/new?game=${m.metadata.id}`)}>Jugar</Button>
+                          <Button size="sm" onClick={() => navigate(`/session/new?game=${m.metadata.id}`)}>{t('library.play')}</Button>
                           {isCustomGame(m.metadata.id) ? (
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/games/${m.metadata.id}/edit`)} className="flex items-center gap-1 justify-center">
-                              <Pencil size={12} /> Editar
+                              <Pencil size={12} /> {t('library.edit')}
                             </Button>
                           ) : (
-                            <Button size="sm" variant="ghost" onClick={() => uninstall(m.metadata.id)}>Quitar</Button>
+                            <Button size="sm" variant="ghost" onClick={() => uninstall(m.metadata.id)}>{t('library.remove')}</Button>
                           )}
                         </>
                       ) : (
-                        <Button size="sm" variant="secondary" onClick={() => install(m.metadata.id)}>+ Instalar</Button>
+                        <Button size="sm" variant="secondary" onClick={() => install(m.metadata.id)}>{t('library.install')}</Button>
                       )}
                     </div>
                   </div>
@@ -212,7 +215,7 @@ export function LibraryPage() {
       {tab === 'stats' && (
         <>
           {gameStats.length === 0 ? (
-            <p className="text-center text-gray-400 py-12">Todavía no hay partidas jugadas.</p>
+            <p className="text-center text-gray-400 py-12">{t('library.noSessions')}</p>
           ) : (
             <div className="rounded-2xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden divide-y divide-gray-100 dark:divide-gray-700/50">
               {gameStats.map(({ module: m, records: rec }) => (
@@ -220,21 +223,21 @@ export function LibraryPage() {
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium text-gray-800 dark:text-gray-100 truncate">{m.metadata.name}</p>
                     <span className="text-xs text-gray-400 shrink-0">
-                      {rec.totalPlayed} {rec.totalPlayed === 1 ? 'partida' : 'partidas'}
+                      {rec.totalPlayed} {rec.totalPlayed === 1 ? t('common.session') : t('common.sessions')}
                     </span>
                   </div>
                   <div className="flex gap-4 mt-2">
                     {rec.highScore && (
                       <div className="flex-1 bg-gray-50 dark:bg-gray-700/50 rounded-xl px-3 py-2">
-                        <p className="text-xs text-gray-400 mb-0.5">Récord</p>
+                        <p className="text-xs text-gray-400 mb-0.5">{t('library.statsRecord')}</p>
                         <p className="score-num text-base font-bold text-gray-900 dark:text-white">{rec.highScore.value} pts</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{rec.highScore.playerName}</p>
                       </div>
                     )}
                     {rec.topWinner && (
                       <div className="flex-1 bg-gray-50 dark:bg-gray-700/50 rounded-xl px-3 py-2">
-                        <p className="text-xs text-gray-400 mb-0.5">Más victorias</p>
-                        <p className="score-num text-base font-bold text-gray-900 dark:text-white">{rec.topWinner.wins} vic.</p>
+                        <p className="text-xs text-gray-400 mb-0.5">{t('library.statsMostWins')}</p>
+                        <p className="score-num text-base font-bold text-gray-900 dark:text-white">{rec.topWinner.wins} {t('library.statsVictories')}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{rec.topWinner.playerName}</p>
                       </div>
                     )}

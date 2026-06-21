@@ -2,21 +2,23 @@ import { useSyncExternalStore } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Library, Play, Users, History } from 'lucide-react';
 import { sessionsStorage } from '../../lib/storage';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export function BottomNav() {
   const activeSession = useSyncExternalStore(sessionsStorage.subscribe, sessionsStorage.getActive);
+  const { t } = useTranslation();
 
   const tabs = [
-    { to: '/library', label: 'Librería', Icon: Library },
+    { to: '/library', label: t('nav.library'), Icon: Library },
     {
       to: activeSession ? `/session/${activeSession.id}` : '/session/new',
-      label: 'Jugar',
+      label: t('nav.play'),
       Icon: Play,
       badge: !!activeSession,
       matchPrefix: '/session/',
     },
-    { to: '/players', label: 'Jugadores', Icon: Users },
-    { to: '/history', label: 'Historial', Icon: History },
+    { to: '/players', label: t('nav.players'), Icon: Users },
+    { to: '/history', label: t('nav.history'), Icon: History },
   ];
 
   return (

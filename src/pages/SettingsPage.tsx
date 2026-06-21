@@ -3,10 +3,11 @@ import { playersStorage, sessionsStorage, installedGamesStorage, customGamesStor
 import { applyTheme } from '../lib/theme';
 import { validateBackup, type BackupData } from '../lib/backup';
 import { useSettings } from '../hooks/useSettings';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
-import type { AppSettings } from '../lib/types';
+import type { AppSettings, Language } from '../lib/types';
 
 interface ExportOptions {
   players: boolean;
@@ -15,8 +16,15 @@ interface ExportOptions {
   settings: boolean;
 }
 
+const LANGUAGES: { code: Language; label: string }[] = [
+  { code: 'es', label: 'Español' },
+  { code: 'en', label: 'English' },
+  { code: 'pt', label: 'Português' },
+];
+
 export function SettingsPage() {
   const { settings, update } = useSettings();
+  const { t } = useTranslation();
   const [exported, setExported] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [pendingImport, setPendingImport] = useState<BackupData | null>(null);
@@ -66,6 +74,10 @@ export function SettingsPage() {
     update({ show_running_totals });
   };
 
+  const updateLanguage = (language: Language) => {
+    update({ language });
+  };
+
   const toggleExportOption = (key: keyof ExportOptions) =>
     setExportOptions(o => ({ ...o, [key]: !o[key] }));
 
@@ -93,22 +105,41 @@ export function SettingsPage() {
 
   return (
     <div className="p-4 space-y-6">
-      <PageHeader title="Configuración" backPath="/home" showSettings={false} />
+      <PageHeader title={t('settings.title')} backPath="/home" showSettings={false} />
 
       <Card>
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Tema</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('settings.theme')}</p>
         <div className="flex gap-2">
-          {(['system', 'light', 'dark'] as const).map(t => (
+          {(['system', 'light', 'dark'] as const).map(themeOption => (
             <button
-              key={t}
-              onClick={() => updateTheme(t)}
+              key={themeOption}
+              onClick={() => updateTheme(themeOption)}
               className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
-                settings.theme === t
+                settings.theme === themeOption
                   ? 'bg-indigo-600 text-white'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
               }`}
             >
-              {t === 'system' ? 'Sistema' : t === 'light' ? 'Claro' : 'Oscuro'}
+              {themeOption === 'system' ? t('settings.themeSystem') : themeOption === 'light' ? t('settings.themeLight') : t('settings.themeDark')}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('settings.language')}</p>
+        <div className="flex gap-2">
+          {LANGUAGES.map(({ code, label }) => (
+            <button
+              key={code}
+              onClick={() => updateLanguage(code)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                settings.language === code
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+              }`}
+            >
+              {label}
             </button>
           ))}
         </div>
@@ -117,8 +148,8 @@ export function SettingsPage() {
       <Card>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">Puntajes en vivo</p>
-            <p className="text-xs text-gray-400 mt-0.5">Mostrar tabla de puntajes durante la partida</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('settings.liveTotals')}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{t('settings.liveTotalsDesc')}</p>
           </div>
           <button
             onClick={() => updateShowTotals(!settings.show_running_totals)}
@@ -136,7 +167,7 @@ export function SettingsPage() {
       </Card>
 
       <Card>
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Datos</p>
+        <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('settings.data')}</p>
         <div className="flex gap-2">
           <button
             onClick={() => setShowExportOptions(true)}
@@ -146,13 +177,13 @@ export function SettingsPage() {
                 : 'bg-indigo-600 text-white active:bg-indigo-700'
             }`}
           >
-            {exported ? '✓ Exportado' : 'Exportar JSON'}
+            {exported ? t('settings.exported') : t('settings.export')}
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             className="flex-1 py-2 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 active:bg-gray-200 dark:active:bg-gray-600"
           >
-            Importar JSON
+            {t('settings.import')}
           </button>
           <input
             ref={fileInputRef}
@@ -162,34 +193,34 @@ export function SettingsPage() {
             onChange={handleImportFile}
           />
         </div>
-        <p className="text-xs text-gray-400 mt-2">Exportar descarga un backup · Importar restaura partidas y jugadores</p>
+        <p className="text-xs text-gray-400 mt-2">{t('settings.exportImportHint')}</p>
 
         <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={() => setShowDeleteAll(true)}
             className="w-full py-2 rounded-lg text-sm font-medium text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/40 transition-colors"
           >
-            Borrar todos los datos
+            {t('settings.deleteAll')}
           </button>
-          <p className="text-xs text-gray-400 mt-1.5 text-center">Borra partidas y jugadores. No afecta la librería.</p>
+          <p className="text-xs text-gray-400 mt-1.5 text-center">{t('settings.deleteAllHint')}</p>
         </div>
       </Card>
 
       <Modal
         open={showExportOptions}
-        title="¿Qué querés exportar?"
-        confirmLabel="Descargar"
-        cancelLabel="Cancelar"
+        title={t('settings.exportTitle')}
+        confirmLabel={t('settings.exportDownload')}
+        cancelLabel={t('common.cancel')}
         onConfirm={handleExport}
         onCancel={() => setShowExportOptions(false)}
       >
         <div className="space-y-3 py-1">
           {(
             [
-              { key: 'players', label: 'Jugadores', desc: `${playersStorage.getAll().length} jugadores` },
-              { key: 'sessions', label: 'Partidas', desc: `${sessionsStorage.getAll().length} partidas` },
-              { key: 'custom_games', label: 'Mis juegos', desc: `${customGamesStorage.getAll().length} juegos personalizados` },
-              { key: 'settings', label: 'Preferencias', desc: 'Tema y ajustes de la app' },
+              { key: 'players', label: t('settings.exportPlayers'), desc: t('settings.exportPlayersDesc', { count: playersStorage.getAll().length }) },
+              { key: 'sessions', label: t('settings.exportSessions'), desc: t('settings.exportSessionsDesc', { count: sessionsStorage.getAll().length }) },
+              { key: 'custom_games', label: t('settings.exportCustomGames'), desc: t('settings.exportCustomGamesDesc', { count: customGamesStorage.getAll().length }) },
+              { key: 'settings', label: t('settings.exportSettings'), desc: t('settings.exportSettingsDesc') },
             ] as { key: keyof ExportOptions; label: string; desc: string }[]
           ).map(({ key, label, desc }) => (
             <label key={key} className="flex items-center gap-3 cursor-pointer">
@@ -210,10 +241,10 @@ export function SettingsPage() {
 
       <Modal
         open={showDeleteAll}
-        title="¿Borrar todos los datos?"
-        description="Se van a eliminar todas las partidas y jugadores. Los juegos instalados no se tocan. Esta acción no se puede deshacer."
-        confirmLabel="Borrar todo"
-        cancelLabel="Cancelar"
+        title={t('settings.deleteAllTitle')}
+        description={t('settings.deleteAllDesc')}
+        confirmLabel={t('settings.deleteAllConfirm')}
+        cancelLabel={t('common.cancel')}
         confirmVariant="danger"
         onConfirm={() => {
           sessionsStorage.save([]);
@@ -225,10 +256,10 @@ export function SettingsPage() {
 
       <Modal
         open={pendingImport !== null}
-        title="¿Restaurar backup?"
-        description="Esto va a reemplazar todos tus datos actuales (jugadores, partidas, ajustes) con los del archivo. No se puede deshacer."
-        confirmLabel="Restaurar"
-        cancelLabel="Cancelar"
+        title={t('settings.restoreTitle')}
+        description={t('settings.restoreDesc')}
+        confirmLabel={t('settings.restore')}
+        cancelLabel={t('common.cancel')}
         confirmVariant="danger"
         onConfirm={() => pendingImport && applyImport(pendingImport)}
         onCancel={() => setPendingImport(null)}
@@ -236,10 +267,10 @@ export function SettingsPage() {
 
       <Modal
         open={importError !== null}
-        title="Error al importar"
+        title={t('settings.importErrorTitle')}
         description={importError ?? ''}
-        confirmLabel="Entendido"
-        cancelLabel="Cerrar"
+        confirmLabel={t('common.understood')}
+        cancelLabel={t('common.close')}
         onConfirm={() => setImportError(null)}
         onCancel={() => setImportError(null)}
       />

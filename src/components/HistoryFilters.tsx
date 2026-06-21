@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { Player } from '../lib/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 export type SortOrder = 'desc' | 'asc';
 export type Period = '' | 'week' | 'month' | 'year';
@@ -10,12 +11,6 @@ export interface FilterState {
   sort: SortOrder;
   period: Period;
 }
-
-const PERIOD_LABELS: Record<string, string> = {
-  week: '7 días',
-  month: 'Este mes',
-  year: 'Este año',
-};
 
 interface Props {
   players: Player[];
@@ -73,16 +68,23 @@ function FilterChip({ label, activeLabel, value, onChange, onClear, children }: 
 }
 
 export function HistoryFilters({ players, gameNames, value, onChange }: Props) {
+  const { t } = useTranslation();
   const playerLabel = players.find(p => p.id === value.player)?.name ?? '';
 
   const toggleSort = () =>
     onChange({ ...value, sort: value.sort === 'desc' ? 'asc' : 'desc' });
 
+  const periodLabels: Record<string, string> = {
+    week: t('history.periodWeekShort'),
+    month: t('history.periodMonth'),
+    year: t('history.periodYear'),
+  };
+
   return (
     <div className="flex items-center gap-2">
       <div className="flex gap-2 overflow-x-auto flex-1">
         <FilterChip
-          label="Juego"
+          label={t('history.filterGame')}
           activeLabel={value.game}
           value={value.game}
           onChange={game => onChange({ ...value, game })}
@@ -92,7 +94,7 @@ export function HistoryFilters({ players, gameNames, value, onChange }: Props) {
         </FilterChip>
 
         <FilterChip
-          label="Jugador"
+          label={t('history.filterPlayer')}
           activeLabel={playerLabel}
           value={value.player}
           onChange={player => onChange({ ...value, player })}
@@ -102,21 +104,21 @@ export function HistoryFilters({ players, gameNames, value, onChange }: Props) {
         </FilterChip>
 
         <FilterChip
-          label="Fecha"
-          activeLabel={PERIOD_LABELS[value.period] ?? ''}
+          label={t('history.filterDate')}
+          activeLabel={periodLabels[value.period] ?? ''}
           value={value.period}
           onChange={period => onChange({ ...value, period: period as Period })}
           onClear={() => onChange({ ...value, period: '' })}
         >
-          <option value="week">Últimos 7 días</option>
-          <option value="month">Este mes</option>
-          <option value="year">Este año</option>
+          <option value="week">{t('history.periodWeek')}</option>
+          <option value="month">{t('history.periodMonth')}</option>
+          <option value="year">{t('history.periodYear')}</option>
         </FilterChip>
       </div>
 
       <button
         onClick={toggleSort}
-        title={value.sort === 'desc' ? 'Más recientes primero' : 'Más antiguas primero'}
+        title={value.sort === 'desc' ? t('history.sortDescTitle') : t('history.sortAscTitle')}
         className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-base font-semibold transition-colors ${
           value.sort === 'asc'
             ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400'

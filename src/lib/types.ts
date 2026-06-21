@@ -93,9 +93,12 @@ export interface InstalledGame {
   is_favorite: boolean;
 }
 
+export type Language = 'es' | 'en' | 'pt';
+
 export interface AppSettings {
   theme: 'light' | 'dark' | 'system';
   show_running_totals: boolean;
+  language: Language;
 }
 
 // ─── Computed (not persisted) ─────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { sessionsStorage } from '../lib/storage';
 import { computeStreak, computeHeadToHead, computeGameStats, computeEloRatings, computeEloHistory } from '../lib/sessionEngine';
 import { usePlayers } from '../hooks/usePlayers';
 import { useSessions } from '../hooks/useSession';
+import { useTranslation } from '../hooks/useTranslation';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -17,6 +18,7 @@ export function PlayerDetailPage() {
   const navigate = useNavigate();
   const { players: allPlayers, updatePlayer, removePlayer } = usePlayers();
   const allSessions = useSessions();
+  const { t } = useTranslation();
 
   const player = id ? allPlayers.find(p => p.id === id) ?? null : null;
 
@@ -57,23 +59,23 @@ export function PlayerDetailPage() {
   }, [player, allSessions]);
 
   if (!player || !stats) {
-    return <div className="p-4 text-gray-400">Jugador no encontrado.</div>;
+    return <div className="p-4 text-gray-400">{t('playerDetail.notFound')}</div>;
   }
 
   const { played, won, winrate, streak, favGame, elo, eloHistory, recentSessions, gameStats, h2h, nameSnapshot } = stats;
 
-  const resolveOpponent = (pid: string) => allPlayers.find(p => p.id === pid)?.name ?? nameSnapshot[pid] ?? 'Desconocido';
+  const resolveOpponent = (pid: string) => allPlayers.find(p => p.id === pid)?.name ?? nameSnapshot[pid] ?? t('playerDetail.unknown');
   const opponentPlayer = (pid: string) => allPlayers.find(p => p.id === pid);
 
   const deleteDescription = (() => {
     const activeSession = allSessions.find(s => s.status === 'active') ?? null;
     if (activeSession?.player_ids.includes(player.id)) {
-      return `Está en la partida activa de ${activeSession.game_name}. Esa partida quedará eliminada.`;
+      return t('playerDetail.deleteInActive', { game: activeSession.game_name });
     }
     if (played.length > 0) {
-      return `Participó en ${played.length} partida${played.length !== 1 ? 's' : ''}. El historial se conserva.`;
+      return t('playerDetail.deleteHasHistory', { count: played.length, plural: played.length !== 1 ? 's' : '' });
     }
-    return '¿Confirmar eliminación?';
+    return t('playerDetail.deleteConfirm');
   })();
 
   const handleConfirmDelete = () => {
@@ -113,12 +115,12 @@ export function PlayerDetailPage() {
         </div>
 
         <div>
-          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Emoji</p>
+          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('playerDetail.emojiLabel')}</p>
           <div className="flex gap-2 flex-wrap">
             {EMOJIS.map(e => (
               <button
                 key={e}
-                aria-label={`Avatar ${e}`}
+                aria-label={t('playerDetail.avatarAriaLabel', { emoji: e })}
                 aria-pressed={emoji === e}
                 onClick={() => setEmoji(e)}
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-lg transition-all ${emoji === e ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}
@@ -130,12 +132,12 @@ export function PlayerDetailPage() {
         </div>
 
         <div>
-          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Color</p>
+          <p className="text-xs text-gray-400 uppercase font-semibold mb-2">{t('playerDetail.colorLabel')}</p>
           <div className="flex gap-2 flex-wrap">
             {COLORS.map((c, i) => (
               <button
                 key={c}
-                aria-label={`Color ${i + 1}`}
+                aria-label={t('playerDetail.colorAriaLabel', { n: i + 1 })}
                 aria-pressed={color === c}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-800' : ''}`}
@@ -146,16 +148,16 @@ export function PlayerDetailPage() {
         </div>
 
         <Button className="w-full" onClick={handleSave} disabled={!name.trim()}>
-          {saved ? '¡Guardado!' : 'Guardar cambios'}
+          {saved ? t('playerDetail.saved') : t('playerDetail.saveChanges')}
         </Button>
       </Card>
 
       <Card>
-        <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Estadísticas</p>
+        <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('playerDetail.statsTitle')}</p>
         {elo !== null && (
           <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100 dark:border-gray-700">
             <div>
-              <p className="text-xs text-gray-400">Rating ELO</p>
+              <p className="text-xs text-gray-400">{t('playerDetail.eloRating')}</p>
               <p className="score-num text-3xl font-bold text-gray-900 dark:text-white mt-0.5">{elo}</p>
             </div>
             <div className={`text-sm font-semibold px-2.5 py-1 rounded-full ${
@@ -170,16 +172,16 @@ export function PlayerDetailPage() {
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">
-          <StatBox label="Partidas" value={played.length} />
-          <StatBox label="Ganadas" value={won} />
-          <StatBox label="Winrate" value={`${winrate}%`} />
+          <StatBox label={t('playerDetail.statSessions')} value={played.length} />
+          <StatBox label={t('playerDetail.statWins')} value={won} />
+          <StatBox label={t('playerDetail.statWinrate')} value={`${winrate}%`} />
           <StatBox
-            label="Racha actual"
+            label={t('playerDetail.statStreak')}
             value={streak.type === 'none' ? '—' : `${streak.count} ${streak.type === 'win' ? '🏆' : '💀'}`}
           />
         </div>
         <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <p className="text-xs text-gray-400">Juego favorito</p>
+          <p className="text-xs text-gray-400">{t('playerDetail.favGame')}</p>
           <p className="font-medium text-gray-800 dark:text-gray-100 mt-0.5">{favGame}</p>
         </div>
       </Card>
@@ -187,8 +189,8 @@ export function PlayerDetailPage() {
       {eloHistory.length >= 2 && (
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-semibold text-gray-400 uppercase">Progresión ELO</p>
-            <span className="text-xs text-gray-400">base 1000</span>
+            <p className="text-xs font-semibold text-gray-400 uppercase">{t('playerDetail.eloProgress')}</p>
+            <span className="text-xs text-gray-400">{t('playerDetail.eloBase')}</span>
           </div>
           <EloChart history={eloHistory} />
           <div className="flex justify-between mt-1.5 text-xs text-gray-400">
@@ -200,7 +202,7 @@ export function PlayerDetailPage() {
 
       {recentSessions.length > 0 && (
         <Card>
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Últimas partidas</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('playerDetail.recentSessions')}</p>
           <div className="space-y-2">
             {recentSessions.map(s => {
               const winners = s.winner_ids ?? [];
@@ -222,12 +224,12 @@ export function PlayerDetailPage() {
 
       {gameStats.length >= 2 && (
         <Card>
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Por juego</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('playerDetail.byGame')}</p>
           <div className="space-y-2">
             {gameStats.map(g => (
               <div key={g.gameId} className="flex items-center gap-3">
                 <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{g.gameName}</span>
-                <span className="text-xs text-gray-400 shrink-0">{g.played}P</span>
+                <span className="text-xs text-gray-400 shrink-0">{g.played}{t('playerDetail.gameP')}</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white w-10 text-right shrink-0">{g.winRate}%</span>
               </div>
             ))}
@@ -237,7 +239,7 @@ export function PlayerDetailPage() {
 
       {h2h.length > 0 && (
         <Card>
-          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Head-to-head</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase mb-3">{t('playerDetail.h2h')}</p>
           <div className="space-y-3">
             {h2h.map(match => {
               const opp = opponentPlayer(match.opponentId);
@@ -256,22 +258,22 @@ export function PlayerDetailPage() {
       )}
 
       <Button variant="secondary" className="w-full" onClick={() => navigate(`/history?player=${player.id}`)}>
-        Ver partidas
+        {t('playerDetail.viewSessions')}
       </Button>
 
       <button
         className="w-full text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300 py-1 transition-colors"
         onClick={() => setShowDeleteModal(true)}
       >
-        Eliminar jugador
+        {t('playerDetail.delete')}
       </button>
 
       <Modal
         open={showDeleteModal}
-        title={`¿Eliminar a ${player.name}?`}
+        title={t('playerDetail.deleteModalTitle', { name: player.name })}
         description={deleteDescription}
-        confirmLabel="Eliminar"
-        cancelLabel="Cancelar"
+        confirmLabel={t('common.delete')}
+        cancelLabel={t('common.cancel')}
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteModal(false)}
