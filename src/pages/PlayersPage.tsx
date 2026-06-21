@@ -15,6 +15,8 @@ export function PlayersPage() {
   const [tab, setTab] = useState<'list' | 'metrics'>('list');
   const [metricsView, setMetricsView] = useState<'elo' | 'wins'>('elo');
   const [showEloInfo, setShowEloInfo] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'recent' | 'games'>('name');
 
   const handleAdd = () => {
     const trimmed = name.trim();
@@ -24,6 +26,22 @@ export function PlayersPage() {
   };
 
   const allSessions = useSessions();
+
+  const gameCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allSessions.filter(s => s.status === 'completed').forEach(s => {
+      s.player_ids.forEach(pid => { counts[pid] = (counts[pid] ?? 0) + 1; });
+    });
+    return counts;
+  }, [allSessions]);
+
+  const visiblePlayers = useMemo(() => {
+    const q = search.toLowerCase();
+    const filtered = q ? players.filter(p => p.name.toLowerCase().includes(q)) : players;
+    if (sortBy === 'name') return filtered; // already alphabetical from usePlayers
+    if (sortBy === 'recent') return [...filtered].sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return [...filtered].sort((a, b) => (gameCounts[b.id] ?? 0) - (gameCounts[a.id] ?? 0));
+  }, [players, search, sortBy, gameCounts]);
 
   const { byElo, byWins } = useMemo(() => {
     const completed = allSessions.filter(s => s.status === 'completed');
@@ -85,6 +103,7 @@ export function PlayersPage() {
             <div className="flex gap-2">
               <input
                 type="text"
+                aria-label="Nombre del jugador"
                 placeholder="Nombre del jugador"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -101,8 +120,40 @@ export function PlayersPage() {
             <p className="text-center text-gray-400 py-12">No hay jugadores todavía.</p>
           )}
 
+          {players.length > 4 && (
+            <div className="space-y-2">
+              <input
+                type="search"
+                aria-label="Buscar jugador"
+                placeholder="Buscar jugador..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-4 py-2.5 text-sm"
+              />
+              <div className="flex gap-2">
+                {(['name', 'recent', 'games'] as const).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setSortBy(s)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      sortBy === s
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+                    }`}
+                  >
+                    {s === 'name' ? 'A–Z' : s === 'recent' ? 'Recientes' : 'Más partidas'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {players.length > 0 && visiblePlayers.length === 0 && (
+            <p className="text-center text-gray-400 py-12">No se encontraron jugadores.</p>
+          )}
+
           <div className="space-y-2">
-            {players.map(player => (
+            {visiblePlayers.map(player => (
               <Card
                 key={player.id}
                 className="flex items-center gap-3 cursor-pointer hover:ring-2 hover:ring-indigo-200 dark:hover:ring-indigo-700 transition-all"

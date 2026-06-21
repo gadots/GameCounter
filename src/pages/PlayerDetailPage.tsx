@@ -118,6 +118,8 @@ export function PlayerDetailPage() {
             {EMOJIS.map(e => (
               <button
                 key={e}
+                aria-label={`Avatar ${e}`}
+                aria-pressed={emoji === e}
                 onClick={() => setEmoji(e)}
                 className={`w-9 h-9 rounded-full flex items-center justify-center text-lg transition-all ${emoji === e ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30' : 'bg-gray-100 dark:bg-gray-700'}`}
               >
@@ -130,9 +132,11 @@ export function PlayerDetailPage() {
         <div>
           <p className="text-xs text-gray-400 uppercase font-semibold mb-2">Color</p>
           <div className="flex gap-2 flex-wrap">
-            {COLORS.map(c => (
+            {COLORS.map((c, i) => (
               <button
                 key={c}
+                aria-label={`Color ${i + 1}`}
+                aria-pressed={color === c}
                 onClick={() => setColor(c)}
                 className={`w-7 h-7 rounded-full transition-all ${color === c ? 'ring-2 ring-offset-2 ring-gray-400 dark:ring-offset-gray-800' : ''}`}
                 style={{ backgroundColor: c }}

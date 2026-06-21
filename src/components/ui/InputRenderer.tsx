@@ -47,7 +47,7 @@ function InputField({ def, value, onChange, disabled, takenByPlayer }: FieldProp
       </div>
       <div className="shrink-0">
         {def.type === 'toggle' && (
-          <Toggle value={value as boolean} onChange={onChange} disabled={effectiveDisabled} />
+          <Toggle value={value as boolean} onChange={onChange} disabled={effectiveDisabled} label={def.label} />
         )}
         {def.type === 'stepper' && (
           <Stepper value={value as number} def={def} onChange={onChange} disabled={effectiveDisabled} />
@@ -63,12 +63,13 @@ function InputField({ def, value, onChange, disabled, takenByPlayer }: FieldProp
   );
 }
 
-function Toggle({ value, onChange, disabled }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
+function Toggle({ value, onChange, disabled, label }: { value: boolean; onChange: (v: boolean) => void; disabled?: boolean; label: string }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={value}
+      aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!value)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${value ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'}`}
@@ -83,20 +84,22 @@ function Stepper({ value, def, onChange, disabled }: { value: number; def: Input
   const max = def.max ?? Infinity;
 
   return (
-    <div className="flex items-center gap-2">
+    <div role="group" aria-label={def.label} className="flex items-center gap-2">
       <button
         type="button"
+        aria-label={`Restar ${def.label}`}
         disabled={disabled || value <= min}
         onClick={() => onChange(Math.max(min, value - 1))}
         className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 font-bold text-lg"
       >
         −
       </button>
-      <span className="w-8 text-center text-base font-semibold tabular-nums text-gray-800 dark:text-gray-100">
+      <span aria-live="polite" className="w-8 text-center text-base font-semibold tabular-nums text-gray-800 dark:text-gray-100">
         {value}
       </span>
       <button
         type="button"
+        aria-label={`Sumar ${def.label}`}
         disabled={disabled || value >= max}
         onClick={() => onChange(Math.min(max, value + 1))}
         className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-40 font-bold text-lg"
@@ -111,6 +114,7 @@ function NumberField({ value, def, onChange, disabled }: { value: number; def: I
   return (
     <input
       type="number"
+      aria-label={def.label}
       value={value}
       min={def.min}
       max={def.max}
@@ -124,6 +128,7 @@ function NumberField({ value, def, onChange, disabled }: { value: number; def: I
 function SelectField({ value, def, onChange, disabled }: { value: number; def: InputDef; onChange: (v: number) => void; disabled?: boolean }) {
   return (
     <select
+      aria-label={def.label}
       value={value}
       disabled={disabled}
       onChange={e => onChange(Number(e.target.value))}

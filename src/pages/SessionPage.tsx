@@ -235,6 +235,8 @@ export function SessionPage() {
                 <button
                   key={pid}
                   onClick={() => setActivePlayer(i)}
+                  aria-label={`Seleccionar a ${p?.name ?? 'Jugador'}`}
+                  aria-pressed={isActive}
                   style={isActive ? { backgroundColor: color } : {}}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0 transition-all ${
                     isActive ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'

@@ -107,6 +107,43 @@ describe('InputRenderer — select', () => {
   });
 });
 
+describe('InputRenderer — accessible names', () => {
+  it('toggle has aria-label matching its label', () => {
+    const inputs: InputDef[] = [{ id: 'won', label: 'Ganó la ronda', type: 'toggle' }];
+    render(<InputRenderer inputs={inputs} values={{ won: false }} onChange={vi.fn()} />);
+    expect(screen.getByRole('switch')).toHaveAttribute('aria-label', 'Ganó la ronda');
+  });
+
+  it('stepper buttons have aria-labels with Restar/Sumar prefix', () => {
+    const inputs: InputDef[] = [{ id: 'pts', label: 'Puntos', type: 'stepper', min: 0, max: 10 }];
+    render(<InputRenderer inputs={inputs} values={{ pts: 5 }} onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Restar Puntos')).toBeInTheDocument();
+    expect(screen.getByLabelText('Sumar Puntos')).toBeInTheDocument();
+  });
+
+  it('stepper value span has aria-live=polite', () => {
+    const inputs: InputDef[] = [{ id: 'pts', label: 'Puntos', type: 'stepper', min: 0, max: 10 }];
+    render(<InputRenderer inputs={inputs} values={{ pts: 3 }} onChange={vi.fn()} />);
+    const liveRegion = document.querySelector('[aria-live="polite"]');
+    expect(liveRegion).not.toBeNull();
+    expect(liveRegion?.textContent).toBe('3');
+  });
+
+  it('number input has aria-label matching its label', () => {
+    const inputs: InputDef[] = [{ id: 'score', label: 'Puntaje total', type: 'number' }];
+    render(<InputRenderer inputs={inputs} values={{ score: 0 }} onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Puntaje total')).toBeInTheDocument();
+  });
+
+  it('select has aria-label matching its label', () => {
+    const inputs: InputDef[] = [
+      { id: 'pos', label: 'Posición makis', type: 'select', options: ['1°', '2°'] },
+    ];
+    render(<InputRenderer inputs={inputs} values={{ pos: 0 }} onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Posición makis')).toBeInTheDocument();
+  });
+});
+
 describe('InputRenderer — takenBy', () => {
   it('shows "Asignado a [name]" text when takenBy is provided', () => {
     const inputs: InputDef[] = [{ id: 'won', label: 'Ganó', type: 'toggle' }];

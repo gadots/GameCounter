@@ -82,4 +82,43 @@ describe('Modal', () => {
     );
     expect(screen.getByText('Contenido del modal')).toBeInTheDocument();
   });
+
+  it('Tab wraps from last to first focusable element', () => {
+    render(
+      <Modal open title="T" confirmLabel="Confirmar" cancelLabel="Cancelar" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const buttons = screen.getAllByRole('button');
+    const last = buttons[buttons.length - 1];
+    last.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
+    // focus should wrap — confirm button (first focusable) gets focus
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
+  it('Shift+Tab wraps from first to last focusable element', () => {
+    render(
+      <Modal open title="T" confirmLabel="Confirmar" cancelLabel="Cancelar" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    const buttons = screen.getAllByRole('button');
+    const first = buttons[0];
+    first.focus();
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(buttons[buttons.length - 1]);
+  });
+
+  it('restores focus to the previously focused element when closed', () => {
+    const trigger = document.createElement('button');
+    trigger.textContent = 'Abrir';
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    const { rerender } = render(
+      <Modal open title="T" confirmLabel="OK" cancelLabel="" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    rerender(
+      <Modal open={false} title="T" confirmLabel="OK" cancelLabel="" onConfirm={vi.fn()} onCancel={vi.fn()} />,
+    );
+    expect(document.activeElement).toBe(trigger);
+    document.body.removeChild(trigger);
+  });
 });
