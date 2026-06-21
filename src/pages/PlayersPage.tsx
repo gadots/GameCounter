@@ -6,7 +6,7 @@ import { computeEloRatings } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Settings } from 'lucide-react';
 
 export function PlayersPage() {
   const { players, addPlayer } = usePlayers();
@@ -85,7 +85,24 @@ export function PlayersPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title="Jugadores" />
+      <div className="flex items-center gap-2">
+        <PageHeader title="Jugadores" showSettings={false} />
+        <button
+          onClick={() => setShowAddModal(true)}
+          aria-label="Agregar jugador"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+        >
+          <UserPlus size={15} />
+          Agregar
+        </button>
+        <button
+          onClick={() => navigate('/settings')}
+          className="p-2 -mr-2 rounded-xl text-gray-400 dark:text-gray-500 active:bg-gray-100 dark:active:bg-gray-800 transition-colors shrink-0"
+          aria-label="Ajustes"
+        >
+          <Settings size={20} />
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-2">
@@ -106,14 +123,6 @@ export function PlayersPage() {
 
       {tab === 'list' && (
         <>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
-          >
-            <UserPlus size={16} />
-            Agregar jugador
-          </button>
-
           {players.length === 0 && (
             <p className="text-center text-gray-400 py-12">No hay jugadores todavía.</p>
           )}
@@ -279,7 +288,7 @@ export function PlayersPage() {
       <Modal
         open={showAddModal}
         title="Agregar jugador"
-        confirmLabel="Agregar"
+        confirmLabel="Guardar"
         cancelLabel="Cancelar"
         onConfirm={handleAdd}
         onCancel={handleCloseAddModal}
