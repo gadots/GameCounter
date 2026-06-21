@@ -19,7 +19,7 @@ export function LibraryPage() {
   const { installed, install, uninstall, isInstalled, toggleFavorite } = useInstalledGames();
   const { customGames, isCustomGame } = useCustomGames();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, tTag } = useTranslation();
 
   // Re-derive modules whenever custom games change so the list stays reactive
   const allModules = useMemo(() => getGameModules(), [customGames]);
@@ -133,7 +133,7 @@ export function LibraryPage() {
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                {tag}
+                {tTag(tag)}
               </button>
             ))}
             {selectedTags.size > 0 && (
@@ -177,7 +177,7 @@ export function LibraryPage() {
                       <div className="flex gap-1 mt-1.5 flex-wrap">
                         {m.metadata.tags.map(tag => (
                           <span key={tag} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-full px-2 py-0.5">
-                            {tag}
+                            {tTag(tag)}
                           </span>
                         ))}
                       </div>
