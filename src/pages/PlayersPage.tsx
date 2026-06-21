@@ -4,9 +4,9 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useSessions } from '../hooks/useSession';
 import { computeEloRatings } from '../lib/sessionEngine';
 import { Card } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { PageHeader } from '../components/layout/PageHeader';
+import { UserPlus } from 'lucide-react';
 
 export function PlayersPage() {
   const { players, addPlayer } = usePlayers();
@@ -15,6 +15,7 @@ export function PlayersPage() {
   const [tab, setTab] = useState<'list' | 'metrics'>('list');
   const [metricsView, setMetricsView] = useState<'elo' | 'wins'>('elo');
   const [showEloInfo, setShowEloInfo] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'recent' | 'games'>('name');
 
@@ -23,6 +24,12 @@ export function PlayersPage() {
     if (!trimmed) return;
     addPlayer(trimmed);
     setName('');
+    setShowAddModal(false);
+  };
+
+  const handleCloseAddModal = () => {
+    setName('');
+    setShowAddModal(false);
   };
 
   const allSessions = useSessions();
@@ -99,22 +106,13 @@ export function PlayersPage() {
 
       {tab === 'list' && (
         <>
-          <Card>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                aria-label="Nombre del jugador"
-                placeholder="Nombre del jugador"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAdd()}
-                className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 px-3 py-2 text-sm"
-              />
-              <Button onClick={handleAdd} disabled={!name.trim()}>
-                Agregar
-              </Button>
-            </div>
-          </Card>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 text-sm font-medium text-gray-500 dark:text-gray-400 hover:border-indigo-400 hover:text-indigo-500 dark:hover:border-indigo-500 dark:hover:text-indigo-400 transition-colors"
+          >
+            <UserPlus size={16} />
+            Agregar jugador
+          </button>
 
           {players.length === 0 && (
             <p className="text-center text-gray-400 py-12">No hay jugadores todavía.</p>
@@ -277,6 +275,27 @@ export function PlayersPage() {
           )}
         </>
       )}
+
+      <Modal
+        open={showAddModal}
+        title="Agregar jugador"
+        confirmLabel="Agregar"
+        cancelLabel="Cancelar"
+        onConfirm={handleAdd}
+        onCancel={handleCloseAddModal}
+      >
+        <input
+          // eslint-disable-next-line jsx-a11y/no-autofocus
+          autoFocus
+          type="text"
+          aria-label="Nombre del jugador"
+          placeholder="Nombre del jugador"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 px-3 py-2.5 text-sm"
+        />
+      </Modal>
 
       <Modal
         open={showEloInfo}

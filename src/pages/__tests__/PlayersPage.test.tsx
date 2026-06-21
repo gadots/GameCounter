@@ -86,26 +86,29 @@ describe('PlayersPage', () => {
     expect(mocks.navigate).toHaveBeenCalledWith('/players/p1');
   });
 
-  it('"Agregar" button exists in the list tab', () => {
+  it('"Agregar jugador" button exists in the list tab', () => {
     render(<PlayersPage />);
-    expect(screen.getByText('Agregar')).toBeInTheDocument();
+    expect(screen.getByText('Agregar jugador')).toBeInTheDocument();
   });
 
-  it('the name input exists with correct placeholder', () => {
+  it('clicking "Agregar jugador" opens the modal with name input', () => {
     render(<PlayersPage />);
+    fireEvent.click(screen.getByText('Agregar jugador'));
     expect(screen.getByPlaceholderText('Nombre del jugador')).toBeInTheDocument();
   });
 
-  it('adding a player name and clicking Agregar calls addPlayer', () => {
+  it('adding a player name and clicking Agregar in modal calls addPlayer', () => {
     render(<PlayersPage />);
+    fireEvent.click(screen.getByText('Agregar jugador'));
     const input = screen.getByPlaceholderText('Nombre del jugador');
     fireEvent.change(input, { target: { value: 'Luis' } });
     fireEvent.click(screen.getByText('Agregar'));
     expect(mockAddPlayer).toHaveBeenCalledWith('Luis');
   });
 
-  it('pressing Enter in the name input calls addPlayer', () => {
+  it('pressing Enter in the modal input calls addPlayer', () => {
     render(<PlayersPage />);
+    fireEvent.click(screen.getByText('Agregar jugador'));
     const input = screen.getByPlaceholderText('Nombre del jugador');
     fireEvent.change(input, { target: { value: 'Sofia' } });
     fireEvent.keyDown(input, { key: 'Enter' });
