@@ -32,3 +32,24 @@ describe('Hanabi metadata', () => {
     expect(hanabi.metadata.cooperative).toBe(true);
   });
 });
+
+describe('Hanabi modes', () => {
+  it('has standard and multicolor modes', () => {
+    const modeIds = hanabi.metadata.modes?.map(m => m.id);
+    expect(modeIds).toEqual(['standard', 'multicolor']);
+  });
+
+  it('caps standard mode at 25', () => {
+    const input = hanabi.getInputs!('standard')[0];
+    expect(input.max).toBe(25);
+  });
+
+  it('caps multicolor mode at 30', () => {
+    const input = hanabi.getInputs!('multicolor')[0];
+    expect(input.max).toBe(30);
+  });
+
+  it('defaults to standard inputs for unknown mode', () => {
+    expect(hanabi.getInputs!('')[0].max).toBe(25);
+  });
+});

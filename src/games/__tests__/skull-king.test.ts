@@ -82,4 +82,40 @@ describe('Skull King metadata', () => {
   it('has 10 total rounds', () => {
     expect(skullKing.metadata.total_rounds).toBe(10);
   });
+
+  it('has advanced and standard modes', () => {
+    const modeIds = skullKing.metadata.modes?.map(m => m.id);
+    expect(modeIds).toEqual(['advanced', 'standard']);
+  });
+});
+
+describe('Skull King modes — getInputs', () => {
+  it('advanced mode exposes all bonus inputs', () => {
+    const ids = skullKing.getInputs!('advanced').map(i => i.id);
+    expect(ids).toEqual(['bid', 'won', 'skull_king', 'mermaids', 'pirates', 'flag_14s']);
+  });
+
+  it('standard mode only exposes bid and won', () => {
+    const ids = skullKing.getInputs!('standard').map(i => i.id);
+    expect(ids).toEqual(['bid', 'won']);
+  });
+});
+
+describe('Skull King modes — scoring', () => {
+  function scoreMode(values: Record<string, number | boolean>, mode: string, round = 5) {
+    return skullKing.score(values, { round, total_rounds: 10, mode_id: mode });
+  }
+
+  it('advanced mode applies bonuses on perfect prediction', () => {
+    expect(scoreMode({ ...base, bid: 2, won: 2, skull_king: true }, 'advanced')).toBe(70);
+  });
+
+  it('standard mode ignores bonuses even if present', () => {
+    // bid=2, won=2 → 40, bonuses ignored
+    expect(scoreMode({ ...base, bid: 2, won: 2, skull_king: true, pirates: 2 }, 'standard')).toBe(40);
+  });
+
+  it('standard mode still scores bid=0 correctly', () => {
+    expect(scoreMode({ ...base, bid: 0, won: 0 }, 'standard', 3)).toBe(30);
+  });
 });

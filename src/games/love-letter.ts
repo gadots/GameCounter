@@ -13,7 +13,7 @@ export default {
   },
 
   inputs: [
-    { id: 'won', label: '¿Ganó esta sub-ronda?', type: 'toggle', description: '+1 token de afecto. Primero en llegar a la meta gana la partida (2j→7, 3j→5, 4j+→4).' },
+    { id: 'won', label: '¿Ganó esta sub-ronda?', type: 'toggle', exclusive_group: 'love_letter_winner', description: '+1 token de afecto. Solo un jugador gana cada sub-ronda. Primero en llegar a la meta gana la partida (2j→7, 3j→5, 4j+→4).' },
   ],
 
   score({ won }) {

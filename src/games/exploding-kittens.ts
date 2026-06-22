@@ -13,7 +13,7 @@ export default {
   },
 
   inputs: [
-    { id: 'won', label: '¿Ganó esta ronda?', type: 'toggle', description: 'El único sobreviviente obtiene 1 punto. Los demás obtienen 0.' },
+    { id: 'won', label: '¿Ganó esta ronda?', type: 'toggle', exclusive_group: 'ek_winner', description: 'El único sobreviviente obtiene 1 punto. Los demás obtienen 0.' },
   ],
 
   score({ won }) {

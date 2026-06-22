@@ -17,7 +17,8 @@ export default {
       id: 'won',
       label: '¿Ganaste esta partida?',
       type: 'toggle',
-      description: '+1 punto por partida ganada. Jugá múltiples rondas para comparar victorias.',
+      exclusive_group: 'coup_winner',
+      description: '+1 punto por partida ganada. Solo un jugador gana cada ronda. Jugá múltiples rondas para comparar victorias.',
     },
   ],
 

@@ -11,7 +11,7 @@ export default {
   },
   inputs: [
     { id: 'civilian',  label: 'Cartas civiles (azules)',   type: 'stepper', min: 0, description: 'VP impreso en las cartas azules' },
-    { id: 'science',   label: 'Ciencia (verdes)',          type: 'stepper', min: 0, description: 'Cada par de símbolos iguales = +9 VP. Si tenés los 7 símbolos distintos = +10 VP adicionales' },
+    { id: 'science',   label: 'Ciencia (verdes)',          type: 'stepper', min: 0, description: 'VP impreso en las cartas verdes. Los símbolos NO dan VP: sirven para tomar tokens de progreso (par igual) y la victoria científica (6 símbolos distintos)' },
     { id: 'commerce',  label: 'Comercio y gremios',        type: 'stepper', min: 0, description: 'VP de cartas amarillas y moradas con VP condicionales (ya calculados)' },
     { id: 'wonders',   label: 'Maravillas',                type: 'stepper', min: 0, description: 'VP impreso en las maravillas construidas' },
     { id: 'military',  label: 'Tokens de victoria militar', type: 'stepper', min: 0, description: 'Suma de los VP de los tokens de victoria obtenidos en conflictos militares' },

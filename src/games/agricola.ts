@@ -20,10 +20,10 @@ export default {
   },
 
   inputs: [
-    { id: 'fields',         label: 'Campos (cant.)',           type: 'stepper', min: 0, max: 9,  description: '0=−1 / 1=0 / 2=+1 / 3=+2 / 4=+3 / 5+=+4' },
+    { id: 'fields',         label: 'Campos (cant.)',           type: 'stepper', min: 0, max: 9,  description: '0–1=−1 / 2=+1 / 3=+2 / 4=+3 / 5+=+4' },
     { id: 'pastures',       label: 'Pastos vallados (cant.)', type: 'stepper', min: 0, max: 8,  description: '0=−1 / 1=+1 / 2=+2 / 3=+3 / 4+=+4' },
     { id: 'grain',          label: 'Granos en reserva',       type: 'stepper', min: 0, description: '0=−1 / 1–3=+1 / 4–5=+2 / 6–7=+3 / 8+=+4' },
-    { id: 'vegetables',     label: 'Vegetales en reserva',    type: 'stepper', min: 0, description: '0=−1 / 1=+1 / 2–3=+2 / 4+=+3' },
+    { id: 'vegetables',     label: 'Vegetales en reserva',    type: 'stepper', min: 0, description: '0=−1 / 1=+1 / 2=+2 / 3=+3 / 4+=+4' },
     { id: 'sheep',          label: 'Ovejas',                  type: 'stepper', min: 0, description: '0=−1 / 1–3=+1 / 4–5=+2 / 6–7=+3 / 8+=+4' },
     { id: 'pigs',           label: 'Jabalíes',                type: 'stepper', min: 0, description: '0=−1 / 1–2=+1 / 3–4=+2 / 5–6=+3 / 7+=+4' },
     { id: 'cattle',         label: 'Ganado',                  type: 'stepper', min: 0, description: '0=−1 / 1=+1 / 2–3=+2 / 4–5=+3 / 6+=+4' },
@@ -38,10 +38,10 @@ export default {
   ],
 
   score({ fields, pastures, grain, vegetables, sheep, pigs, cattle, unused_spaces, stables, house_type, room_count, family_members, bonus_cards }) {
-    const fieldVP:    [number, number][] = [[1, 0], [2, 1], [3, 2], [4, 3], [5, 4]];
+    const fieldVP:    [number, number][] = [[2, 1], [3, 2], [4, 3], [5, 4]];
     const pastureVP:  [number, number][] = [[1, 1], [2, 2], [3, 3], [4, 4]];
     const grainVP:    [number, number][] = [[1, 1], [4, 2], [6, 3], [8, 4]];
-    const vegVP:      [number, number][] = [[1, 1], [2, 2], [4, 3]];
+    const vegVP:      [number, number][] = [[1, 1], [2, 2], [3, 3], [4, 4]];
     const sheepVP:    [number, number][] = [[1, 1], [4, 2], [6, 3], [8, 4]];
     const pigVP:      [number, number][] = [[1, 1], [3, 2], [5, 3], [7, 4]];
     const cattleVP:   [number, number][] = [[1, 1], [2, 2], [4, 3], [6, 4]];

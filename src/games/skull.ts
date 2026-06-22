@@ -18,7 +18,8 @@ export default {
       id: 'won',
       label: '¿Ganaste la apuesta?',
       type: 'toggle',
-      description: '+1 medallón por apuesta ganada exitosamente. Meta: 2 medallones.',
+      exclusive_group: 'skull_winner',
+      description: '+1 medallón por apuesta ganada exitosamente. Solo un jugador gana cada ronda. Meta: 2 medallones.',
     },
   ],
 

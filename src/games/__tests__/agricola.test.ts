@@ -52,8 +52,8 @@ describe('Agrícola tableVP — fields', () => {
   it('returns -1 for 0 fields (total: -1 + offset -6 = -7)', () => {
     expect(scoreOneVP({ fields: 0 })).toBe(-1 + BASE_OFFSET);
   });
-  it('returns 0 for 1 field (total: 0 + offset -6 = -6)', () => {
-    expect(scoreOneVP({ fields: 1 })).toBe(0 + BASE_OFFSET);
+  it('returns -1 for 1 field (0–1 fields both score -1)', () => {
+    expect(scoreOneVP({ fields: 1 })).toBe(-1 + BASE_OFFSET);
   });
   it('returns +1 for 2 fields (total: +1 + offset -6 = -5)', () => {
     expect(scoreOneVP({ fields: 2 })).toBe(1 + BASE_OFFSET);
@@ -82,6 +82,25 @@ describe('Agrícola tableVP — grain', () => {
   it('returns +4 for 8+ grain', () => {
     expect(scoreOneVP({ grain: 8 })).toBe(4 + BASE_OFFSET);
     expect(scoreOneVP({ grain: 10 })).toBe(4 + BASE_OFFSET);
+  });
+});
+
+describe('Agrícola tableVP — vegetables', () => {
+  it('returns -1 for 0 vegetables', () => {
+    expect(scoreOneVP({ vegetables: 0 })).toBe(-1 + BASE_OFFSET);
+  });
+  it('returns +1 for 1 vegetable', () => {
+    expect(scoreOneVP({ vegetables: 1 })).toBe(1 + BASE_OFFSET);
+  });
+  it('returns +2 for 2 vegetables', () => {
+    expect(scoreOneVP({ vegetables: 2 })).toBe(2 + BASE_OFFSET);
+  });
+  it('returns +3 for 3 vegetables', () => {
+    expect(scoreOneVP({ vegetables: 3 })).toBe(3 + BASE_OFFSET);
+  });
+  it('returns +4 for 4+ vegetables', () => {
+    expect(scoreOneVP({ vegetables: 4 })).toBe(4 + BASE_OFFSET);
+    expect(scoreOneVP({ vegetables: 7 })).toBe(4 + BASE_OFFSET);
   });
 });
 
@@ -134,43 +153,43 @@ describe('Agrícola tableVP — cattle', () => {
 });
 
 describe('Agrícola house_type calculation', () => {
-  // Use all-one tableVP categories so none contribute -1 (each animal/resource at a non-zero level)
-  // fields=1→0, pastures=1→+1, grain=1→+1, veg=1→+1, sheep=1→+1, pigs=1→+1, cattle=1→+1 → total tableVP = +6
-  const oneEach = { fields: 1, pastures: 1, grain: 1, vegetables: 1, sheep: 1, pigs: 1, cattle: 1 };
+  // Each tableVP category set so it contributes +1 (fields needs ≥2 to reach +1).
+  // fields=2→+1, pastures=1→+1, grain=1→+1, veg=1→+1, sheep=1→+1, pigs=1→+1, cattle=1→+1 → total tableVP = +7
+  const oneEach = { fields: 2, pastures: 1, grain: 1, vegetables: 1, sheep: 1, pigs: 1, cattle: 1 };
 
   it('wood (house_type=0) subtracts 1 VP per room', () => {
-    // tableVP=+6, rooms=3, house_type=0 → 6 + 3*(-1) = 3
-    expect(agricola.score({ ...neutralExtras, ...oneEach, house_type: 0, room_count: 3 }, ctx)).toBe(3);
+    // tableVP=+7, rooms=3, house_type=0 → 7 + 3*(-1) = 4
+    expect(agricola.score({ ...neutralExtras, ...oneEach, house_type: 0, room_count: 3 }, ctx)).toBe(4);
   });
 
   it('clay (house_type=1) contributes 0 VP per room', () => {
-    // tableVP=+6, rooms=3, house_type=1 → 6 + 3*0 = 6
-    expect(agricola.score({ ...neutralExtras, ...oneEach, house_type: 1, room_count: 3 }, ctx)).toBe(6);
+    // tableVP=+7, rooms=3, house_type=1 → 7 + 3*0 = 7
+    expect(agricola.score({ ...neutralExtras, ...oneEach, house_type: 1, room_count: 3 }, ctx)).toBe(7);
   });
 
   it('stone (house_type=2) adds 1 VP per room', () => {
-    // tableVP=+6, rooms=3, house_type=2 → 6 + 3*1 = 9
-    expect(agricola.score({ ...neutralExtras, ...oneEach, house_type: 2, room_count: 3 }, ctx)).toBe(9);
+    // tableVP=+7, rooms=3, house_type=2 → 7 + 3*1 = 10
+    expect(agricola.score({ ...neutralExtras, ...oneEach, house_type: 2, room_count: 3 }, ctx)).toBe(10);
   });
 });
 
 describe('Agrícola family_members', () => {
-  const oneEach = { fields: 1, pastures: 1, grain: 1, vegetables: 1, sheep: 1, pigs: 1, cattle: 1 };
+  const oneEach = { fields: 2, pastures: 1, grain: 1, vegetables: 1, sheep: 1, pigs: 1, cattle: 1 };
 
   it('contributes 3 VP each', () => {
-    // tableVP=+6, family_members=2 → 6 + 2*3 = 12
-    expect(agricola.score({ ...neutralExtras, ...oneEach, family_members: 2 }, ctx)).toBe(12);
-    // tableVP=+6, family_members=5 → 6 + 5*3 = 21
-    expect(agricola.score({ ...neutralExtras, ...oneEach, family_members: 5 }, ctx)).toBe(21);
+    // tableVP=+7, family_members=2 → 7 + 2*3 = 13
+    expect(agricola.score({ ...neutralExtras, ...oneEach, family_members: 2 }, ctx)).toBe(13);
+    // tableVP=+7, family_members=5 → 7 + 5*3 = 22
+    expect(agricola.score({ ...neutralExtras, ...oneEach, family_members: 5 }, ctx)).toBe(22);
   });
 });
 
 describe('Agrícola unused_spaces', () => {
-  const oneEach = { fields: 1, pastures: 1, grain: 1, vegetables: 1, sheep: 1, pigs: 1, cattle: 1 };
+  const oneEach = { fields: 2, pastures: 1, grain: 1, vegetables: 1, sheep: 1, pigs: 1, cattle: 1 };
 
   it('subtracts 1 VP per unused space', () => {
-    // tableVP=+6, unused_spaces=3 → 6 - 3 = 3
-    expect(agricola.score({ ...neutralExtras, ...oneEach, unused_spaces: 3 }, ctx)).toBe(3);
+    // tableVP=+7, unused_spaces=3 → 7 - 3 = 4
+    expect(agricola.score({ ...neutralExtras, ...oneEach, unused_spaces: 3 }, ctx)).toBe(4);
   });
 });
 

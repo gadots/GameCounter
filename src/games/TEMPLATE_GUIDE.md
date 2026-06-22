@@ -97,6 +97,8 @@ export default {
     tags?: string[],          // para filtrar en la librería
     bgg_id?: number,          // ID numérico de BoardGameGeek
     cooperative?: boolean,    // true → todos comparten inputs y puntaje
+    modes?: { id: string, name: string, description?: string }[], // variantes de juego
+    default_mode?: string,    // id del modo preseleccionado
   },
 
   inputs: [
@@ -113,13 +115,18 @@ export default {
     },
   ],
 
-  // ctx.round es 1-indexed. Para end_of_game siempre será 1.
+  // Opcional: inputs según el modo de juego (ver Patrón 3b).
+  getInputs?(mode_id): InputDef[] {
+    return mode_id === 'standard' ? standardInputs : defaultInputs;
+  },
+
+  // ctx.round es 1-indexed. Para end_of_game siempre será 1. ctx.mode_id es el modo activo.
   score(values, ctx) {
     return /* número, puede ser negativo */;
   },
 
   // Opcional: validación cruzada entre inputs del mismo jugador.
-  validate?(values): string | null {
+  validate?(values, mode_id?): string | null {
     return null; // o string de error visible al usuario
   },
 
@@ -212,6 +219,45 @@ score({ fireworks }) {
   return fireworks as number;
 },
 ```
+
+---
+
+### 3b. Modos de juego (`modes` + `getInputs`)
+
+Para juegos con **varios modos/variantes oficiales** que cambian los inputs o el cálculo de puntaje (ej: Skull King avanzado vs. clásico, Hanabi con o sin pila multicolor).
+
+Al crear la sesión, si el juego tiene 2+ modos aparece un selector de chips. El modo elegido se guarda en `session.mode_id` y llega a `score()` por `ctx.mode_id`.
+
+```typescript
+metadata: {
+  // ...
+  modes: [
+    { id: 'advanced', name: 'Avanzado', description: 'Con cartas especiales' },
+    { id: 'standard', name: 'Clásico',  description: 'Solo apuestas y basas' },
+  ],
+  default_mode: 'advanced',   // ← modo preseleccionado
+},
+
+inputs: advancedInputs,        // inputs por defecto (modo default)
+
+// Devuelve los inputs según el modo. La app lo llama en lugar de `inputs`.
+getInputs(mode_id) {
+  return mode_id === 'standard' ? standardInputs : advancedInputs;
+},
+
+// `ctx.mode_id` permite ramificar el cálculo.
+score(values, { round, mode_id }) {
+  const bonus = mode_id !== 'standard' ? computeBonus(values) : 0;
+  return base + bonus;
+},
+```
+
+Reglas:
+- `modes` necesita al menos 2 entradas para que aparezca el selector.
+- `default_mode` debe coincidir con un `id` de `modes` (si se omite, se usa el primero).
+- `getInputs(mode_id)` es opcional; si no está, la app usa `inputs` siempre.
+- Los modos **no** cambian `min_players`/`max_players` (eso es metadata global). Sirven para variar inputs y scoring.
+- `final_round` es independiente del modo (mismo bonus final para todos los modos).
 
 ---
 
@@ -365,7 +411,7 @@ export default {
 | Archivo | Juego | Modo | Rondas | Target | Especial |
 |---------|-------|------|--------|--------|---------|
 | `catan.ts` | Catan | end_of_game | — | 10 VP | exclusive_group (camino, ejército) |
-| `skull-king.ts` | Skull King | per_round | 10 | — | validate() |
+| `skull-king.ts` | Skull King | per_round | 10 | — | **modes** (avanzado/clásico), validate() |
 | `ticket-to-ride.ts` | Ticket to Ride | end_of_game | — | — | exclusive_group (ruta) |
 | `splendor.ts` | Splendor | end_of_game | — | 15 pts | — |
 | `uno.ts` | UNO | per_round | abierto | 500 pts | — |
@@ -376,8 +422,11 @@ export default {
 | `seven-wonders.ts` | 7 Wonders | end_of_game | — | — | — |
 | `root.ts` | Root | end_of_game | — | 30 VP | — |
 | `agricola.ts` | Agrícola | end_of_game | — | — | tableVP(), select (tipo cabaña) |
-| `exploding-kittens.ts` | Exploding Kittens | per_round | abierto | — | Terminar manual |
+| `exploding-kittens.ts` | Exploding Kittens | per_round | abierto | — | exclusive_group (ganador), Terminar manual |
 | `codenames.ts` | Codenames | per_round | abierto | — | Terminar manual |
-| `love-letter.ts` | Love Letter | per_round | abierto | — | Terminar manual |
+| `love-letter.ts` | Love Letter | per_round | abierto | — | exclusive_group (ganador), Terminar manual |
 | `sushi-go.ts` | Sushi Go! | per_round | 3 | — | final_round (flanes), select (makis) |
-| `hanabi.ts` | Hanabi | end_of_game | — | 25 pts | cooperative |
+| `hanabi.ts` | Hanabi | end_of_game | — | 25 pts | **modes** (clásico/multicolor), cooperative |
+| `coup.ts` | Coup | per_round | abierto | — | exclusive_group (ganador) |
+| `skull.ts` | Skull | per_round | abierto | 2 | exclusive_group (ganador) |
+| `takenoko.ts` | Takenoko | end_of_game | — | — | exclusive_group (emperador) |
