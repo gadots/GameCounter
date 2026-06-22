@@ -186,7 +186,7 @@ export function CustomGameEditorPage() {
       : t('editor.inputMultiplierHint');
 
   return (
-    <div className="p-4 space-y-4 pb-10">
+    <div className="p-4 space-y-4">
       <PageHeader title={isEdit ? t('editor.titleEdit') : t('editor.titleNew')} showBack />
 
       {/* Metadata */}

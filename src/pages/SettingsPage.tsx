@@ -104,7 +104,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-4">
       <PageHeader title={t('settings.title')} showBack showSettings={false} />
 
       <Card>

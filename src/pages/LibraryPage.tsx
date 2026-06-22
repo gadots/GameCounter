@@ -74,7 +74,7 @@ export function LibraryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
         <PageHeader title={t('library.title')} showSettings={false} />
         <button
           onClick={() => navigate('/games/new')}

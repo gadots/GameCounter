@@ -169,7 +169,7 @@ export function NewSessionPage() {
       .join(', ');
 
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4">
         <PageHeader title={t('newSession.play')} />
 
         <Card className="border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20">
@@ -205,7 +205,7 @@ export function NewSessionPage() {
 
   return (
     <>
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-4">
         <PageHeader title={t('newSession.title')} />
 
         {!selectedGame && (() => {
