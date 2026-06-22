@@ -187,7 +187,7 @@ export function CustomGameEditorPage() {
 
   return (
     <div className="p-4 space-y-4 pb-10">
-      <PageHeader title={isEdit ? t('editor.titleEdit') : t('editor.titleNew')} backPath="/library" />
+      <PageHeader title={isEdit ? t('editor.titleEdit') : t('editor.titleNew')} showBack />
 
       {/* Metadata */}
       <Card className="space-y-4">

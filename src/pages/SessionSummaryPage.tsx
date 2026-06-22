@@ -86,7 +86,7 @@ export function SessionSummaryPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title={session.game_name} backPath="/history" />
+      <PageHeader title={session.game_name} showBack />
       <p className="text-sm text-gray-400 -mt-4">
         {date.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
       </p>

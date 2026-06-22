@@ -105,7 +105,7 @@ export function SettingsPage() {
 
   return (
     <div className="p-4 space-y-6">
-      <PageHeader title={t('settings.title')} backPath="/home" showSettings={false} />
+      <PageHeader title={t('settings.title')} showBack showSettings={false} />
 
       <Card>
         <p className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('settings.theme')}</p>

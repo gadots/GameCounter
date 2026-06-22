@@ -97,7 +97,7 @@ export function PlayerDetailPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <PageHeader title={player.name} backPath="/players" />
+      <PageHeader title={player.name} showBack />
 
       <Card className="space-y-4">
         <div className="flex items-center gap-3">
