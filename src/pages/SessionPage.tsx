@@ -101,7 +101,8 @@ export function SessionPage() {
 
   const isFinalBonus = session.in_final_bonus ?? false;
   const isCooperative = module.metadata.cooperative ?? false;
-  const activeInputs = isFinalBonus ? (module.final_round?.inputs ?? module.inputs) : module.inputs;
+  const modeInputs = module.getInputs?.(session.mode_id ?? '') ?? module.inputs;
+  const activeInputs = isFinalBonus ? (module.final_round?.inputs ?? modeInputs) : modeInputs;
   const finalBonusLabel = module.final_round?.label ?? 'Bonificación final';
 
   // In cooperative mode all players share the same input slot (first player).
@@ -189,6 +190,13 @@ export function SessionPage() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{session.game_name}</h1>
             {isFinalBonus ? (
               <p className="text-sm font-medium text-indigo-500 dark:text-indigo-400">{finalBonusLabel}</p>
+            ) : module.metadata.modes && session.mode_id ? (
+              <p className="text-sm text-gray-400">
+                {module.metadata.modes.find(m => m.id === session.mode_id)?.name}
+                {module.metadata.scoring_mode === 'per_round' && ` · ${module.metadata.total_rounds
+                  ? t('session.roundNOfTotal', { n: session.current_round, total: module.metadata.total_rounds })
+                  : t('session.roundN', { n: session.current_round })}`}
+              </p>
             ) : module.metadata.scoring_mode === 'per_round' && (
               <p className="text-sm text-gray-400">
                 {module.metadata.total_rounds

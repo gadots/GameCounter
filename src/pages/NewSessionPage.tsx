@@ -84,6 +84,7 @@ export function NewSessionPage() {
   const [selectedPlayers, setSelectedPlayers] = useState<string[]>(
     () => searchParams.get('players')?.split(',').filter(Boolean) ?? []
   );
+  const [selectedMode, setSelectedMode] = useState('');
   const [showAbandonModal, setShowAbandonModal] = useState(false);
   const [shuffled, setShuffled] = useState(false);
   const [animating, setAnimating] = useState<'dice' | 'cards' | null>(null);
@@ -112,6 +113,14 @@ export function NewSessionPage() {
   const activeSession = sessionsStorage.getActive();
   const installedModules = getGameModules().filter(m => isInstalled(m.metadata.id));
   const selectedModule = installedModules.find(m => m.metadata.id === selectedGame);
+
+  useEffect(() => {
+    if (selectedModule?.metadata.modes?.length) {
+      setSelectedMode(selectedModule.metadata.default_mode ?? selectedModule.metadata.modes[0].id);
+    } else {
+      setSelectedMode('');
+    }
+  }, [selectedGame]);
 
   const togglePlayer = (id: string) => {
     setSelectedPlayers(prev =>
@@ -144,10 +153,12 @@ export function NewSessionPage() {
     }
   };
 
+  const hasModes = (selectedModule?.metadata.modes?.length ?? 0) > 1;
   const canStart =
     selectedModule &&
     selectedPlayers.length >= selectedModule.metadata.min_players &&
-    selectedPlayers.length <= selectedModule.metadata.max_players;
+    selectedPlayers.length <= selectedModule.metadata.max_players &&
+    (!hasModes || !!selectedMode);
 
   const handleStart = () => {
     if (!canStart) return;
@@ -159,7 +170,7 @@ export function NewSessionPage() {
   };
 
   const startNewSession = () => {
-    const id = createSession(selectedGame, selectedPlayers);
+    const id = createSession(selectedGame, selectedPlayers, selectedMode || undefined);
     navigate(`/session/${id}`);
   };
 
@@ -264,6 +275,33 @@ export function NewSessionPage() {
             ))}
           </div>
         </section>
+
+        {selectedModule && hasModes && (
+          <section className="space-y-2">
+            <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+              {t('newSession.sectionMode')}
+            </h2>
+            <div className="flex gap-2 flex-wrap">
+              {selectedModule.metadata.modes!.map(mode => (
+                <button
+                  key={mode.id}
+                  onClick={() => setSelectedMode(mode.id)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                    selectedMode === mode.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                  }`}
+                >
+                  {mode.name}
+                </button>
+              ))}
+            </div>
+            {selectedMode && (() => {
+              const desc = selectedModule.metadata.modes!.find(m => m.id === selectedMode)?.description;
+              return desc ? <p className="text-xs text-gray-400">{desc}</p> : null;
+            })()}
+          </section>
+        )}
 
         {selectedModule && (
           <section className="space-y-2">

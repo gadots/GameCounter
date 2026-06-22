@@ -28,7 +28,7 @@ export function useSession(sessionId: string | null) {
   );
   const session = useSyncExternalStore(sessionsStorage.subscribe, getSnapshot);
 
-  const createSession = useCallback((game_id: string, player_ids: string[]) => {
+  const createSession = useCallback((game_id: string, player_ids: string[], mode_id?: string) => {
     const module = getGameModule(game_id);
     if (!module) throw new Error(`Game module not found: ${game_id}`);
 
@@ -44,6 +44,10 @@ export function useSession(sessionId: string | null) {
       if (p) player_name_snapshots[pid] = p.name;
     });
 
+    const resolvedMode = mode_id
+      ?? module.metadata.default_mode
+      ?? module.metadata.modes?.[0]?.id;
+
     const newSession: Session = {
       id: uuid(),
       game_id,
@@ -54,6 +58,7 @@ export function useSession(sessionId: string | null) {
       scores: [],
       started_at: new Date().toISOString(),
       player_name_snapshots,
+      mode_id: resolvedMode,
     };
     sessionsStorage.add(newSession);
     return newSession.id;
@@ -65,8 +70,9 @@ export function useSession(sessionId: string | null) {
     if (!module) return;
 
     const isFinalBonus = session.in_final_bonus ?? false;
-    const activeInputs = isFinalBonus ? module.final_round!.inputs : module.inputs;
-    const ctx = { round: session.current_round, total_rounds: module.metadata.total_rounds };
+    const modeInputs = module.getInputs?.(session.mode_id ?? '') ?? module.inputs;
+    const activeInputs = isFinalBonus ? module.final_round!.inputs : modeInputs;
+    const ctx = { round: session.current_round, total_rounds: module.metadata.total_rounds, mode_id: session.mode_id };
 
     // Merge player inputs with defaults so score() always receives numbers, never undefined
     const defaults = getInputDefaults(activeInputs);

@@ -16,6 +16,12 @@ export interface InputDef {
 
 export type ScoringMode = 'end_of_game' | 'per_round';
 
+export interface GameMode {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 export interface GameMetadata {
   id: string;
   name: string;
@@ -29,11 +35,14 @@ export interface GameMetadata {
   bgg_id?: number;
   image_url?: string;
   cooperative?: boolean;
+  modes?: GameMode[];
+  default_mode?: string;
 }
 
 export interface RoundContext {
   round: number;
   total_rounds?: number;
+  mode_id?: string;
 }
 
 export type InputValues = Record<string, number | boolean>;
@@ -47,8 +56,9 @@ export interface FinalRound {
 export interface GameModule {
   metadata: GameMetadata;
   inputs: InputDef[];
+  getInputs?(mode_id: string): InputDef[];
   score(values: InputValues, ctx: RoundContext): number;
-  validate?(values: InputValues): string | null;
+  validate?(values: InputValues, mode_id?: string): string | null;
   final_round?: FinalRound;
 }
 
@@ -85,6 +95,7 @@ export interface Session {
   player_name_snapshots?: Record<string, string>;
   notes?: string;
   in_final_bonus?: boolean;
+  mode_id?: string;
 }
 
 export interface InstalledGame {
