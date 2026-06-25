@@ -5,7 +5,7 @@ function score(values: Record<string, number | boolean>, round = 5) {
   return skullKing.score(values, { round, total_rounds: 10 });
 }
 
-const base = { bid: 0, won: 0, skull_king: false, mermaids: 0, pirates: 0, flag_14s: 0 };
+const base = { bid: 0, won: 0, skull_king: false, pirates: 0, standard_14s: 0, black_14: false, loot: 0 };
 
 describe('Skull King score() — bid === 0', () => {
   it('scores round * 10 when bid=0 and won=0', () => {
@@ -23,26 +23,31 @@ describe('Skull King score() — bid === won (perfect prediction)', () => {
     expect(score({ ...base, bid: 3, won: 3 })).toBe(60);
   });
 
-  it('adds 30 for skull_king bonus', () => {
-    expect(score({ ...base, bid: 3, won: 3, skull_king: true })).toBe(90);
+  it('adds 40 for skull_king bonus (Sirena captura Skull King)', () => {
+    expect(score({ ...base, bid: 3, won: 3, skull_king: true })).toBe(100);
   });
 
-  it('adds 20 per mermaid captured', () => {
-    expect(score({ ...base, bid: 2, won: 2, mermaids: 1 })).toBe(60);
-    expect(score({ ...base, bid: 2, won: 2, mermaids: 2 })).toBe(80);
-  });
-
-  it('adds 30 per pirate captured', () => {
+  it('adds 30 per pirate captured by Skull King', () => {
     expect(score({ ...base, bid: 1, won: 1, pirates: 2 })).toBe(80);
   });
 
-  it('adds 20 per flag_14 captured', () => {
-    expect(score({ ...base, bid: 1, won: 1, flag_14s: 1 })).toBe(40);
+  it('adds 10 per colored 14 captured', () => {
+    expect(score({ ...base, bid: 1, won: 1, standard_14s: 2 })).toBe(40);
+    expect(score({ ...base, bid: 1, won: 1, standard_14s: 3 })).toBe(50);
+  });
+
+  it('adds 20 for black 14 (Jolly Roger) captured', () => {
+    expect(score({ ...base, bid: 1, won: 1, black_14: true })).toBe(40);
+  });
+
+  it('adds 20 per loot card captured', () => {
+    expect(score({ ...base, bid: 1, won: 1, loot: 1 })).toBe(40);
+    expect(score({ ...base, bid: 1, won: 1, loot: 2 })).toBe(60);
   });
 
   it('stacks all bonuses', () => {
-    // bid=2, won=2: 40 + skull_king:30 + mermaids:1*20 + pirates:1*30 + flag_14s:1*20 = 140
-    expect(score({ bid: 2, won: 2, skull_king: true, mermaids: 1, pirates: 1, flag_14s: 1 })).toBe(140);
+    // bid=2, won=2: 40 + skull_king:40 + pirates:1*30 + standard_14s:1*10 + black_14:20 + loot:1*20 = 160
+    expect(score({ bid: 2, won: 2, skull_king: true, pirates: 1, standard_14s: 1, black_14: true, loot: 1 })).toBe(160);
   });
 });
 
@@ -83,21 +88,35 @@ describe('Skull King metadata', () => {
     expect(skullKing.metadata.total_rounds).toBe(10);
   });
 
-  it('has advanced and standard modes', () => {
+  it('has complete, advanced and standard modes', () => {
     const modeIds = skullKing.metadata.modes?.map(m => m.id);
-    expect(modeIds).toEqual(['advanced', 'standard']);
+    expect(modeIds).toEqual(['complete', 'advanced', 'standard']);
+  });
+
+  it('defaults to complete mode', () => {
+    expect(skullKing.metadata.default_mode).toBe('complete');
   });
 });
 
 describe('Skull King modes — getInputs', () => {
-  it('advanced mode exposes all bonus inputs', () => {
+  it('complete mode exposes all inputs including 14s and loot', () => {
+    const ids = skullKing.getInputs!('complete').map(i => i.id);
+    expect(ids).toEqual(['bid', 'won', 'skull_king', 'pirates', 'standard_14s', 'black_14', 'loot']);
+  });
+
+  it('advanced mode exposes skull_king and pirates only', () => {
     const ids = skullKing.getInputs!('advanced').map(i => i.id);
-    expect(ids).toEqual(['bid', 'won', 'skull_king', 'mermaids', 'pirates', 'flag_14s']);
+    expect(ids).toEqual(['bid', 'won', 'skull_king', 'pirates']);
   });
 
   it('standard mode only exposes bid and won', () => {
     const ids = skullKing.getInputs!('standard').map(i => i.id);
     expect(ids).toEqual(['bid', 'won']);
+  });
+
+  it('unknown mode falls back to complete inputs', () => {
+    const ids = skullKing.getInputs!('').map(i => i.id);
+    expect(ids).toEqual(['bid', 'won', 'skull_king', 'pirates', 'standard_14s', 'black_14', 'loot']);
   });
 });
 
@@ -106,12 +125,18 @@ describe('Skull King modes — scoring', () => {
     return skullKing.score(values, { round, total_rounds: 10, mode_id: mode });
   }
 
-  it('advanced mode applies bonuses on perfect prediction', () => {
-    expect(scoreMode({ ...base, bid: 2, won: 2, skull_king: true }, 'advanced')).toBe(70);
+  it('complete mode applies all bonuses on perfect prediction', () => {
+    // bid=2, won=2: 40 + skull_king:40 + pirates:1*30 + standard_14s:1*10 + black_14:20 + loot:1*20 = 160
+    expect(scoreMode({ ...base, bid: 2, won: 2, skull_king: true, pirates: 1, standard_14s: 1, black_14: true, loot: 1 }, 'complete')).toBe(160);
   });
 
-  it('standard mode ignores bonuses even if present', () => {
-    // bid=2, won=2 → 40, bonuses ignored
+  it('advanced mode applies skull_king and pirate bonuses but not 14s or loot', () => {
+    // bid=2, won=2: 40 + skull_king:40 + pirates:1*30 = 110 (14s and loot ignored)
+    expect(scoreMode({ ...base, bid: 2, won: 2, skull_king: true, pirates: 1, standard_14s: 2, black_14: true, loot: 2 }, 'advanced')).toBe(110);
+  });
+
+  it('standard mode ignores all bonuses even if present', () => {
+    // bid=2, won=2 → 40, all bonuses ignored
     expect(scoreMode({ ...base, bid: 2, won: 2, skull_king: true, pirates: 2 }, 'standard')).toBe(40);
   });
 
