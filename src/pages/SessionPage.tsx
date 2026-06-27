@@ -345,6 +345,7 @@ function ScoreTable({ session, module, players }: { session: Session; module: Ga
           const p = players.find(pl => pl.id === tot.player_id);
           const color = p?.color ?? '#6366f1';
           const isLeader = tot.player_id === leader?.player_id && totals.length > 1;
+          const lastDelta = tot.round_scores.length > 0 ? tot.round_scores[tot.round_scores.length - 1] : null;
           return (
             <div key={tot.player_id} className="flex items-center gap-3">
               <div
@@ -353,7 +354,14 @@ function ScoreTable({ session, module, players }: { session: Session; module: Ga
               >
                 {p?.avatar_emoji ?? '🎲'}
               </div>
-              <span className="flex-1 text-sm text-gray-700 dark:text-gray-200">{p?.name ?? 'Jugador'}</span>
+              <div className="flex-1 min-w-0">
+                <span className="block text-sm text-gray-700 dark:text-gray-200 truncate">{p?.name ?? 'Jugador'}</span>
+                {lastDelta !== null && (
+                  <span className="block text-xs text-gray-400 dark:text-gray-500">
+                    {t('session.lastRound', { n: tot.round_scores.length })}: {lastDelta >= 0 ? '+' : ''}{lastDelta}
+                  </span>
+                )}
+              </div>
               {isLeader && rank === 0 && (
                 <span className="text-xs">👑</span>
               )}
