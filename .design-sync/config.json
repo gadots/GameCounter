@@ -1,0 +1,24 @@
+{
+  "pkg": "gamecounter-scaffold",
+  "globalName": "GameCounter",
+  "projectId": "04bd8a9f-bb15-4a36-8c53-65f70a9f4833",
+  "shape": "package",
+  "buildCmd": "npx -y @tailwindcss/cli@4 -i .design-sync/tw/input.css -o .design-sync/tw/compiled.css",
+  "tsconfig": "tsconfig.app.json",
+  "cssEntry": ".design-sync/tw/compiled.css",
+  "readmeHeader": ".design-sync/conventions.md",
+  "componentSrcMap": {
+    "Button": "src/components/ui/Button.tsx",
+    "Card": "src/components/ui/Card.tsx",
+    "Modal": "src/components/ui/Modal.tsx",
+    "Logo": "src/components/ui/Logo.tsx",
+    "InputRenderer": "src/components/ui/InputRenderer.tsx",
+    "PageHeader": "src/components/layout/PageHeader.tsx",
+    "BottomNav": "src/components/layout/BottomNav.tsx"
+  },
+  "provider": { "component": "MemoryRouter" },
+  "overrides": {
+    "Modal": { "cardMode": "single", "viewport": "440x340" },
+    "BottomNav": { "cardMode": "single", "viewport": "390x72" }
+  }
+}

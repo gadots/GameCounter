@@ -1,0 +1,11 @@
+@import "tailwindcss" source(none);
+@custom-variant dark (&:where(.dark, .dark *));
+@source "../../src/components";
+@source "../../src/pages";
+@source "../previews";
+
+.score-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.01em;
+}
